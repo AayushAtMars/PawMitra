@@ -14,7 +14,7 @@ A hyperlocal smart network for animal welfare & community response, featuring AI
 - **Geospatial Queries**: Find volunteers and incidents within 2km radius
 
 ### Technology Stack
-- **Mobile App**: React Native Expo (iOS & Android)
+- **Mobile App**: React Native Expo (iOS & Android & Web)
 - **Backend**: Node.js + Express + MongoDB Atlas
 - **Real-time**: Socket.io
 - **AI**: Google Gemini 1.5 Flash API

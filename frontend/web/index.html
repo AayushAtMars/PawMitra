@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    
+    <title>PawMitra - Animal Welfare Network</title>
+    <meta name="description" content="PawMitra - A hyperlocal smart network for animal welfare & community response" />
+    
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="shortcut icon" href="/favicon.png" />
+    
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      
+      html, body, #root {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow: hidden;
+      }
+      
+      #root {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* Loading screen */
+      .loading-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+      }
+      
+      .loading-logo {
+        font-size: 64px;
+        margin-bottom: 20px;
+        animation: bounce 1s infinite;
+      }
+      
+      .loading-text {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+      }
+      
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root">
+      <div class="loading-screen">
+        <div class="loading-logo">🐾</div>
+        <div class="loading-text">PawMitra</div>
+      </div>
+    </div>
+  </body>
+</html>

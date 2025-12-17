@@ -73,7 +73,13 @@ npm start
 
 This will start the Expo development server. You'll see a QR code in the terminal.
 
-### 4. Run on Device/Simulator
+### 4. Run on Device/Simulator/Web
+
+#### Web Browser
+```bash
+npm run web
+```
+The app will open in your default browser at `http://localhost:19006`
 
 #### iOS Simulator (Mac only)
 ```bash
@@ -89,6 +95,8 @@ npm run android
 1. Install Expo Go app from App Store or Play Store
 2. Scan the QR code from the terminal
 3. Make sure your phone and computer are on the same network
+
+> **Note**: The web version provides the same functionality as the mobile app, making it easy to test and develop without needing a mobile device or emulator.
 
 ## Project Structure
 
@@ -175,6 +183,11 @@ expo build:android
 ```
 
 ## Troubleshooting
+
+### Web Platform
+- **Port already in use**: Change port with `PORT=3000 npm run web`
+- **Module not found errors**: Clear cache with `expo start -c`
+- **Styles not loading**: Refresh browser and clear cache
 
 ### Cannot connect to backend
 - Make sure backend server is running on `http://localhost:5000`
