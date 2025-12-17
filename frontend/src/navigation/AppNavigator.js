@@ -6,13 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import theme from '../theme';
 
-// Import screens (we'll create these)
+// Import screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/home/HomeScreen';
+import ReportIncidentScreen from '../screens/incident/ReportIncidentScreen';
+import VolunteerDashboardScreen from '../screens/volunteer/VolunteerDashboardScreen';
 import {
-  ReportIncidentScreen,
-  VolunteerDashboardScreen,
   AdoptionScreen,
   MarketplaceScreen,
   ProfileScreen,
