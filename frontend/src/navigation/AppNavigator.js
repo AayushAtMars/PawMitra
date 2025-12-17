@@ -12,11 +12,9 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/home/HomeScreen';
 import ReportIncidentScreen from '../screens/incident/ReportIncidentScreen';
 import VolunteerDashboardScreen from '../screens/volunteer/VolunteerDashboardScreen';
-import {
-  AdoptionScreen,
-  MarketplaceScreen,
-  ProfileScreen,
-} from '../screens/PlaceholderScreens';
+import AdoptionScreen from '../screens/adoption/AdoptionScreen';
+import MarketplaceScreen from '../screens/marketplace/MarketplaceScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
