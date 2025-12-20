@@ -4,10 +4,8 @@
         "slug": "pawmitra",
         "version": "1.0.0",
         "orientation": "portrait",
-        "icon": "./assets/icon.png",
         "userInterfaceStyle": "automatic",
         "splash": {
-            "image": "./assets/splash.png",
             "resizeMode": "contain",
             "backgroundColor": "#4F46E5"
         },
@@ -27,7 +25,6 @@
         "android": {
             "package": "com.pawmitra.app",
             "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon.png",
                 "backgroundColor": "#4F46E5"
             },
             "permissions": [
@@ -36,13 +33,12 @@
                 "WRITE_EXTERNAL_STORAGE",
                 "ACCESS_FINE_LOCATION",
                 "ACCESS_COARSE_LOCATION",
-                "ACCESS_BACKGROUND_LOCATION",
                 "RECEIVE_BOOT_COMPLETED",
-                "VIBRATE"
+                "VIBRATE",
+                "INTERNET"
             ]
         },
         "web": {
-            "favicon": "./assets/favicon.png",
             "bundler": "metro"
         },
         "plugins": [
@@ -56,13 +52,6 @@
                 "expo-location",
                 {
                     "locationAlwaysAndWhenInUsePermission": "Allow PawMitra to use your location to find nearby incidents and volunteers."
-                }
-            ],
-            [
-                "expo-notifications",
-                {
-                    "icon": "./assets/notification-icon.png",
-                    "color": "#4F46E5"
                 }
             ]
         ],

@@ -5,133 +5,82 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  RefreshControl,
+  Switch,
   ActivityIndicator,
+  RefreshControl,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { volunteersAPI, incidentsAPI } from '../../services/api';
-import socketService from '../../services/socket';
-import { formatDistance, calculateDistance } from '../../utils/geolocation';
 import theme from '../../theme';
 
 const VolunteerDashboardScreen = ({ navigation }) => {
   const { user } = useAuth();
-  const [stats, setStats] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [nearbyIncidents, setNearbyIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [stats, setStats] = useState({
+    karmaPoints: 0,
+    tasksCompleted: 0,
+    badges: [],
+  });
+  const [activeTasks, setActiveTasks] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
-    loadData();
-    setupSocketListeners();
-
-    return () => {
-      socketService.off('new_incident_alert');
-      socketService.off('task_assigned');
-    };
+    loadDashboardData();
   }, []);
 
-  const setupSocketListeners = () => {
-    // Listen for new incident alerts
-    socketService.on('new_incident_alert', (data) => {
-      Alert.alert(
-        '🚨 New Incident Alert',
-        `${data.incident.category} - ${data.incident.priority} priority\n${data.incident.address}`,
-        [
-          { text: 'Ignore', style: 'cancel' },
-          { text: 'View', onPress: () => loadNearbyIncidents() },
-        ]
-      );
-    });
-
-    // Listen for task assignments
-    socketService.on('task_assigned', (data) => {
-      Alert.alert(
-        '✅ Task Assigned',
-        'You have been assigned to an incident. Check your tasks.',
-        [{ text: 'OK', onPress: () => loadData() }]
-      );
-    });
-  };
-
-  const loadData = async () => {
+  const loadDashboardData = async () => {
     try {
       setLoading(true);
-      await Promise.all([
-        loadStats(),
-        loadTasks(),
-        loadNearbyIncidents(),
+      
+      const [statsRes, tasksRes, leaderboardRes] = await Promise.all([
+        volunteersAPI.getStats(),
+        incidentsAPI.getAll({ assignedTo: user.id, status: 'assigned' }),
+        volunteersAPI.getLeaderboard({ limit: 10 }),
       ]);
+
+      setStats(statsRes.data || { karmaPoints: 0, tasksCompleted: 0, badges: [] });
+      setActiveTasks(tasksRes.data.incidents || []);
+      setLeaderboard(leaderboardRes.data.volunteers || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const loadStats = async () => {
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadDashboardData();
+  };
+
+  const handleToggleAvailability = async () => {
     try {
-      const response = await volunteersAPI.getStats();
-      if (response.data.success) {
-        setStats(response.data.stats);
-      }
+      await volunteersAPI.updateProfile({ isAvailable: !isAvailable });
+      setIsAvailable(!isAvailable);
+      Alert.alert('Success', `You are now ${!isAvailable ? 'available' : 'unavailable'} for tasks`);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('Error updating availability:', error);
+      Alert.alert('Error', 'Failed to update availability');
     }
   };
 
-  const loadTasks = async () => {
+  const handleAcceptTask = async (taskId) => {
     try {
-      const response = await incidentsAPI.getAll({
-        status: 'volunteer_assigned,in_progress',
-        limit: 20,
-      });
-      if (response.data.success) {
-        // Filter tasks assigned to current user
-        const myTasks = response.data.incidents.filter(incident =>
-          incident.assignedVolunteers?.some(av => av.volunteer._id === user.id)
-        );
-        setTasks(myTasks);
-      }
+      await volunteersAPI.acceptTask({ incidentId: taskId });
+      Alert.alert('Success', 'Task accepted! Good luck!');
+      loadDashboardData();
     } catch (error) {
-      console.error('Error loading tasks:', error);
+      console.error('Error accepting task:', error);
+      Alert.alert('Error', 'Failed to accept task');
     }
   };
 
-  const loadNearbyIncidents = async () => {
-    try {
-      if (user.location) {
-        const response = await incidentsAPI.getNearby({
-          longitude: user.location.coordinates[0],
-          latitude: user.location.coordinates[1],
-          maxDistance: 2000, // 2km
-        });
-        if (response.data.success) {
-          setNearbyIncidents(response.data.incidents);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading nearby incidents:', error);
-    }
-  };
-
-  const handleAcceptTask = async (incidentId) => {
-    try {
-      const response = await volunteersAPI.acceptTask({ incidentId });
-      if (response.data.success) {
-        Alert.alert('Success', 'Task accepted! Good luck!');
-        loadData();
-      }
-    } catch (error) {
-      Alert.alert('Error', error.response?.data?.error || 'Failed to accept task');
-    }
-  };
-
-  const handleCompleteTask = async (incidentId) => {
+  const handleCompleteTask = async (taskId) => {
     Alert.alert(
       'Complete Task',
       'Have you completed this task?',
@@ -141,41 +90,96 @@ const VolunteerDashboardScreen = ({ navigation }) => {
           text: 'Complete',
           onPress: async () => {
             try {
-              const response = await volunteersAPI.completeTask({
-                incidentId,
-                notes: 'Task completed via mobile app',
-              });
-              if (response.data.success) {
-                Alert.alert(
-                  '🎉 Task Completed!',
-                  `You earned ${response.data.karmaEarned} karma points!\nTotal Karma: ${response.data.totalKarma}`,
-                  [{ text: 'Awesome!', onPress: () => loadData() }]
-                );
-              }
+              await volunteersAPI.completeTask({ incidentId: taskId });
+              Alert.alert('Success', 'Task completed! Karma points earned! 🎉');
+              loadDashboardData();
             } catch (error) {
+              console.error('Error completing task:', error);
               Alert.alert('Error', 'Failed to complete task');
             }
-          },
-        },
+          }
+        }
       ]
     );
   };
 
-  const toggleAvailability = () => {
-    const newStatus = !isAvailable;
-    setIsAvailable(newStatus);
-    socketService.toggleAvailability(newStatus);
-    Alert.alert(
-      newStatus ? 'You are now available' : 'You are now unavailable',
-      newStatus ? 'You will receive incident alerts' : 'You will not receive alerts'
-    );
-  };
+  const renderTaskCard = (task) => (
+    <View key={task._id} style={styles.taskCard}>
+      <View style={[styles.priorityIndicator, {
+        backgroundColor: task.priority === 'high' 
+          ? theme.colors.error 
+          : task.priority === 'medium'
+          ? theme.colors.warning
+          : theme.colors.success
+      }]} />
+      
+      <View style={styles.taskContent}>
+        <View style={styles.taskHeader}>
+          <Text style={styles.taskTitle}>{task.animalType || 'Animal'} in distress</Text>
+          <Text style={styles.taskPriority}>{task.priority?.toUpperCase()}</Text>
+        </View>
+        
+        <Text style={styles.taskLocation} numberOfLines={1}>
+          <Ionicons name="location" size={12} color={theme.colors.textSecondary} />
+          {' '}{task.address || 'Location not available'}
+        </Text>
+        
+        {task.aiAnalysis?.firstAidSteps && (
+          <Text style={styles.taskDescription} numberOfLines={2}>
+            {task.aiAnalysis.firstAidSteps[0]}
+          </Text>
+        )}
+        
+        <View style={styles.taskActions}>
+          <TouchableOpacity
+            style={[styles.taskButton, styles.completeButton]}
+            onPress={() => handleCompleteTask(task._id)}
+          >
+            <Ionicons name="checkmark-circle" size={18} color={theme.colors.white} />
+            <Text style={styles.taskButtonText}>Complete</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.taskButton, styles.viewButton]}
+            onPress={() => {/* Navigate to task details */}}
+          >
+            <Ionicons name="eye" size={18} color={theme.colors.primary} />
+            <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
+  const renderBadge = (badge, index) => (
+    <View key={index} style={styles.badgeCard}>
+      <View style={styles.badgeIcon}>
+        <Ionicons name="trophy" size={24} color={theme.colors.warning} />
+      </View>
+      <Text style={styles.badgeName}>{badge.name || 'Badge'}</Text>
+    </View>
+  );
+
+  const renderLeaderboardItem = (item, index) => (
+    <View key={item._id} style={styles.leaderboardItem}>
+      <View style={styles.rankBadge}>
+        <Text style={styles.rankText}>#{index + 1}</Text>
+      </View>
+      
+      <View style={styles.leaderboardInfo}>
+        <Text style={styles.leaderboardName}>{item.name}</Text>
+        <Text style={styles.leaderboardKarma}>{item.karmaPoints || 0} karma</Text>
+      </View>
+      
+      {index < 3 && (
+        <Ionicons
+          name="trophy"
+          size={20}
+          color={index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : '#CD7F32'}
+        />
+      )}
+    </View>
+  );
 
   if (loading) {
     return (
@@ -190,216 +194,99 @@ const VolunteerDashboardScreen = ({ navigation }) => {
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
       {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Volunteer Dashboard</Text>
-          <Text style={styles.subtitle}>Making a difference 💝</Text>
+          <Text style={styles.subtitle}>Making a difference! 🐾</Text>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.availabilityButton,
-            isAvailable ? styles.availableButton : styles.unavailableButton,
-          ]}
-          onPress={toggleAvailability}
-        >
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Ionicons name="person-circle" size={40} color={theme.colors.primary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Availability Toggle */}
+      <View style={styles.availabilityCard}>
+        <View style={styles.availabilityInfo}>
           <Ionicons
             name={isAvailable ? 'checkmark-circle' : 'close-circle'}
-            size={20}
-            color={theme.colors.white}
+            size={32}
+            color={isAvailable ? theme.colors.success : theme.colors.gray400}
           />
-          <Text style={styles.availabilityText}>
-            {isAvailable ? 'Available' : 'Unavailable'}
-          </Text>
-        </TouchableOpacity>
+          <View style={styles.availabilityText}>
+            <Text style={styles.availabilityTitle}>
+              {isAvailable ? 'Available for Tasks' : 'Unavailable'}
+            </Text>
+            <Text style={styles.availabilitySubtitle}>
+              {isAvailable ? 'You will receive new task alerts' : 'You won\'t receive alerts'}
+            </Text>
+          </View>
+        </View>
+        <Switch
+          value={isAvailable}
+          onValueChange={handleToggleAvailability}
+          trackColor={{ false: theme.colors.gray300, true: theme.colors.success }}
+          thumbColor={theme.colors.white}
+        />
       </View>
 
       {/* Stats Cards */}
-      {stats && (
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Ionicons name="trophy" size={32} color={theme.colors.primary} />
-            <Text style={styles.statValue}>{stats.karmaPoints}</Text>
-            <Text style={styles.statLabel}>Karma Points</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <Ionicons name="checkmark-done" size={32} color={theme.colors.accent} />
-            <Text style={styles.statValue}>{stats.completedTasks}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <Ionicons name="time" size={32} color={theme.colors.warning} />
-            <Text style={styles.statValue}>{stats.activeTasks}</Text>
-            <Text style={styles.statLabel}>Active</Text>
-          </View>
+      <View style={styles.statsContainer}>
+        <View style={[styles.statCard, { borderLeftColor: theme.colors.warning }]}>
+          <Ionicons name="star" size={32} color={theme.colors.warning} />
+          <Text style={styles.statValue}>{stats.karmaPoints || 0}</Text>
+          <Text style={styles.statLabel}>Karma Points</Text>
         </View>
-      )}
-
-      {/* Badges */}
-      {stats?.badges && stats.badges.length > 0 && (
-        <View style={styles.badgesSection}>
-          <Text style={styles.sectionTitle}>🏆 Your Badges</Text>
-          <View style={styles.badgesContainer}>
-            {stats.badges.map((badge, index) => (
-              <View key={index} style={styles.badge}>
-                <Text style={styles.badgeIcon}>{badge.icon}</Text>
-                <Text style={styles.badgeName}>{badge.name}</Text>
-              </View>
-            ))}
-          </View>
+        
+        <View style={[styles.statCard, { borderLeftColor: theme.colors.success }]}>
+          <Ionicons name="checkmark-done" size={32} color={theme.colors.success} />
+          <Text style={styles.statValue}>{stats.tasksCompleted || 0}</Text>
+          <Text style={styles.statLabel}>Tasks Done</Text>
         </View>
-      )}
+        
+        <View style={[styles.statCard, { borderLeftColor: theme.colors.primary }]}>
+          <Ionicons name="trophy" size={32} color={theme.colors.primary} />
+          <Text style={styles.statValue}>{stats.badges?.length || 0}</Text>
+          <Text style={styles.statLabel}>Badges</Text>
+        </View>
+      </View>
 
       {/* Active Tasks */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📋 Your Tasks ({tasks.length})</Text>
-        {tasks.length === 0 ? (
+        <Text style={styles.sectionTitle}>Active Tasks ({activeTasks.length})</Text>
+        {activeTasks.length > 0 ? (
+          activeTasks.map(renderTaskCard)
+        ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="checkmark-circle" size={48} color={theme.colors.gray300} />
+            <Ionicons name="checkmark-done-circle" size={48} color={theme.colors.gray300} />
             <Text style={styles.emptyText}>No active tasks</Text>
-            <Text style={styles.emptySubtext}>Check nearby incidents below</Text>
+            <Text style={styles.emptySubtext}>You're all caught up!</Text>
           </View>
-        ) : (
-          tasks.map((task) => (
-            <TaskCard
-              key={task._id}
-              task={task}
-              onComplete={() => handleCompleteTask(task._id)}
-            />
-          ))
         )}
       </View>
 
-      {/* Nearby Incidents */}
+      {/* Badges */}
+      {stats.badges && stats.badges.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Badges</Text>
+          <View style={styles.badgesGrid}>
+            {stats.badges.map(renderBadge)}
+          </View>
+        </View>
+      )}
+
+      {/* Leaderboard */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          🚨 Nearby Incidents ({nearbyIncidents.length})
-        </Text>
-        {nearbyIncidents.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="location" size={48} color={theme.colors.gray300} />
-            <Text style={styles.emptyText}>No nearby incidents</Text>
-            <Text style={styles.emptySubtext}>Great! All clear in your area</Text>
-          </View>
-        ) : (
-          nearbyIncidents.map((incident) => (
-            <IncidentCard
-              key={incident._id}
-              incident={incident}
-              userLocation={user.location}
-              onAccept={() => handleAcceptTask(incident._id)}
-            />
-          ))
-        )}
+        <Text style={styles.sectionTitle}>Top Volunteers</Text>
+        <View style={styles.leaderboardContainer}>
+          {leaderboard.map(renderLeaderboardItem)}
+        </View>
       </View>
-
-      {/* Leaderboard Link */}
-      <TouchableOpacity
-        style={styles.leaderboardButton}
-        onPress={() => navigation.navigate('Leaderboard')}
-      >
-        <Ionicons name="podium" size={24} color={theme.colors.primary} />
-        <Text style={styles.leaderboardText}>View Leaderboard</Text>
-        <Ionicons name="chevron-forward" size={24} color={theme.colors.primary} />
-      </TouchableOpacity>
     </ScrollView>
   );
-};
-
-// Task Card Component
-const TaskCard = ({ task, onComplete }) => {
-  const assignment = task.assignedVolunteers?.find(av => av.status === 'accepted');
-
-  return (
-    <View style={styles.taskCard}>
-      <View style={styles.taskHeader}>
-        <View style={[
-          styles.priorityBadge,
-          { backgroundColor: getPriorityColor(task.aiAnalysis?.priority) }
-        ]}>
-          <Text style={styles.priorityText}>
-            {task.aiAnalysis?.priority?.toUpperCase() || 'UNKNOWN'}
-          </Text>
-        </View>
-        <Text style={styles.taskTime}>
-          {new Date(task.createdAt).toLocaleTimeString()}
-        </Text>
-      </View>
-
-      <Text style={styles.taskCategory}>
-        {task.aiAnalysis?.category?.replace('_', ' ').toUpperCase() || 'Incident'}
-      </Text>
-      <Text style={styles.taskAddress}>{task.address}</Text>
-
-      {assignment?.status === 'accepted' && (
-        <TouchableOpacity style={styles.completeButton} onPress={onComplete}>
-          <Ionicons name="checkmark-circle" size={20} color={theme.colors.white} />
-          <Text style={styles.completeButtonText}>Mark as Complete</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-};
-
-// Incident Card Component
-const IncidentCard = ({ incident, userLocation, onAccept }) => {
-  const distance = userLocation
-    ? calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        incident.location.coordinates[1],
-        incident.location.coordinates[0]
-      )
-    : null;
-
-  return (
-    <View style={styles.incidentCard}>
-      <View style={styles.incidentHeader}>
-        <View style={[
-          styles.priorityBadge,
-          { backgroundColor: getPriorityColor(incident.aiAnalysis?.priority) }
-        ]}>
-          <Text style={styles.priorityText}>
-            {incident.aiAnalysis?.priority?.toUpperCase() || 'UNKNOWN'}
-          </Text>
-        </View>
-        {distance && (
-          <Text style={styles.distanceText}>{formatDistance(distance)} away</Text>
-        )}
-      </View>
-
-      <Text style={styles.incidentCategory}>
-        {incident.aiAnalysis?.category?.replace('_', ' ').toUpperCase() || 'Incident'}
-      </Text>
-      <Text style={styles.incidentAddress}>{incident.address}</Text>
-      <Text style={styles.incidentTime}>
-        Reported {new Date(incident.createdAt).toLocaleString()}
-      </Text>
-
-      <TouchableOpacity style={styles.acceptButton} onPress={onAccept}>
-        <Ionicons name="hand-right" size={20} color={theme.colors.white} />
-        <Text style={styles.acceptButtonText}>Accept Task</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-const getPriorityColor = (priority) => {
-  switch (priority) {
-    case 'high':
-      return theme.colors.priorityHigh;
-    case 'medium':
-      return theme.colors.priorityMedium;
-    case 'low':
-      return theme.colors.priorityLow;
-    default:
-      return theme.colors.gray500;
-  }
 };
 
 const styles = StyleSheet.create({
@@ -407,101 +294,90 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  scrollContent: {
-    padding: theme.spacing.lg,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
+  },
+  scrollContent: {
+    paddingBottom: theme.spacing.xxl,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.gray100,
   },
   title: {
-    fontSize: theme.typography.fontSize.xxl,
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
   },
-  availabilityButton: {
+  availabilityCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: theme.colors.white,
+    margin: theme.spacing.lg,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.sm,
+  },
+  availabilityInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    gap: theme.spacing.xs,
-  },
-  availableButton: {
-    backgroundColor: theme.colors.accent,
-  },
-  unavailableButton: {
-    backgroundColor: theme.colors.gray500,
+    flex: 1,
   },
   availabilityText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.fontSize.sm,
+    marginLeft: theme.spacing.md,
+    flex: 1,
+  },
+  availabilityTitle: {
+    fontSize: theme.typography.fontSize.md,
     fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+  },
+  availabilitySubtitle: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
   statsContainer: {
     flexDirection: 'row',
+    paddingHorizontal: theme.spacing.lg,
     gap: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
   },
   statCard: {
     flex: 1,
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
     alignItems: 'center',
+    borderLeftWidth: 4,
     ...theme.shadows.sm,
   },
   statValue: {
     fontSize: theme.typography.fontSize.xxl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
-    marginTop: theme.spacing.sm,
-  },
-  statLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
   },
-  badgesSection: {
-    marginBottom: theme.spacing.xl,
-  },
-  badgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-  },
-  badge: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    alignItems: 'center',
-    minWidth: 80,
-    ...theme.shadows.sm,
-  },
-  badgeIcon: {
-    fontSize: 32,
-  },
-  badgeName: {
+  statLabel: {
     fontSize: theme.typography.fontSize.xs,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
     textAlign: 'center',
   },
   section: {
-    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.lg,
@@ -509,139 +385,149 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.md,
   },
-  emptyState: {
+  taskCard: {
+    flexDirection: 'row',
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.xxl,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.md,
+    overflow: 'hidden',
+    ...theme.shadows.sm,
+  },
+  priorityIndicator: {
+    width: 4,
+  },
+  taskContent: {
+    flex: 1,
+    padding: theme.spacing.md,
+  },
+  taskHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  taskTitle: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+    flex: 1,
+  },
+  taskPriority: {
+    fontSize: theme.typography.fontSize.xs,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.error,
+  },
+  taskLocation: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs,
+  },
+  taskDescription: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+  },
+  taskActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  taskButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.xs,
+  },
+  completeButton: {
+    backgroundColor: theme.colors.success,
+  },
+  viewButton: {
+    backgroundColor: theme.colors.white,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  taskButtonText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.white,
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.md,
+  },
+  badgeCard: {
+    width: '30%',
+    aspectRatio: 1,
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    justifyContent: 'center',
     alignItems: 'center',
     ...theme.shadows.sm,
   },
-  emptyText: {
-    fontSize: theme.typography.fontSize.lg,
+  badgeIcon: {
+    marginBottom: theme.spacing.sm,
+  },
+  badgeName: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.textPrimary,
     fontWeight: theme.typography.fontWeight.medium,
+    textAlign: 'center',
+  },
+  leaderboardContainer: {
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+  },
+  leaderboardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.gray100,
+  },
+  rankBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+  },
+  rankText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.primary,
+  },
+  leaderboardInfo: {
+    flex: 1,
+  },
+  leaderboardName: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+  },
+  leaderboardKarma: {
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xxl,
+  },
+  emptyText: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
     marginTop: theme.spacing.md,
   },
   emptySubtext: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
-  },
-  taskCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    ...theme.shadows.sm,
-  },
-  taskHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  priorityBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-  },
-  priorityText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.fontSize.xs,
-    fontWeight: theme.typography.fontWeight.bold,
-  },
-  taskTime: {
-    fontSize: theme.typography.fontSize.xs,
-    color: theme.colors.textSecondary,
-  },
-  taskCategory: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
-  },
-  taskAddress: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
-  },
-  completeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.sm,
-    gap: theme.spacing.xs,
-  },
-  completeButtonText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.semibold,
-  },
-  incidentCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    ...theme.shadows.sm,
-  },
-  incidentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  distanceText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.primary,
-    fontWeight: theme.typography.fontWeight.semibold,
-  },
-  incidentCategory: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
-  },
-  incidentAddress: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xs,
-  },
-  incidentTime: {
-    fontSize: theme.typography.fontSize.xs,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
-  },
-  acceptButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.sm,
-    gap: theme.spacing.xs,
-  },
-  acceptButtonText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.semibold,
-  },
-  leaderboardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    gap: theme.spacing.sm,
-    ...theme.shadows.md,
-  },
-  leaderboardText: {
-    flex: 1,
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.primary,
   },
 });
 

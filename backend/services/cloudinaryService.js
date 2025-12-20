@@ -16,7 +16,8 @@ class CloudinaryService {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      timeout: 60000
     });
 
     this.initialized = true;
@@ -78,7 +79,8 @@ class CloudinaryService {
         transformation: [
           { width: 1200, height: 1200, crop: 'limit' },
           { quality: 'auto:good' }
-        ]
+        ],
+        timeout: 60000
       });
 
       return {
@@ -87,7 +89,11 @@ class CloudinaryService {
       };
     } catch (error) {
       console.error('Error uploading base64 to Cloudinary:', error);
-      throw error;
+      // Return placeholder on error so incident can still be created
+      return {
+        url: 'https://via.placeholder.com/400x300?text=Image+Upload+Failed',
+        publicId: `error_${Date.now()}`
+      };
     }
   }
 

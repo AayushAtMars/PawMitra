@@ -125,12 +125,17 @@ const AdoptionScreen = ({ navigation }) => {
             {currentPet && (
               <View style={styles.card}>
                 {/* Pet Image */}
-                <Image
-                  source={{
-                    uri: currentPet.photos?.[0]?.url || 'https://via.placeholder.com/400',
-                  }}
-                  style={styles.petImage}
-                />
+                {currentPet.photos && currentPet.photos.length > 0 && currentPet.photos[0]?.url ? (
+                  <Image
+                    source={{ uri: currentPet.photos[0].url }}
+                    style={styles.petImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.petImage, styles.imagePlaceholder]}>
+                    <Ionicons name="paw" size={64} color={theme.colors.gray400} />
+                  </View>
+                )}
 
                 {/* Pet Info */}
                 <View style={styles.petInfo}>
@@ -158,7 +163,9 @@ const AdoptionScreen = ({ navigation }) => {
                   <View style={styles.petDetails}>
                     <View style={styles.detailItem}>
                       <Ionicons name="paw" size={16} color={theme.colors.textSecondary} />
-                      <Text style={styles.detailText}>{currentPet.species}</Text>
+                      <Text style={styles.detailText}>
+                        {currentPet.species?.charAt(0).toUpperCase() + currentPet.species?.slice(1)}
+                      </Text>
                     </View>
                     {currentPet.breed && (
                       <View style={styles.detailItem}>
@@ -169,7 +176,11 @@ const AdoptionScreen = ({ navigation }) => {
                     {currentPet.age && (
                       <View style={styles.detailItem}>
                         <Ionicons name="time" size={16} color={theme.colors.textSecondary} />
-                        <Text style={styles.detailText}>{currentPet.age}</Text>
+                        <Text style={styles.detailText}>
+                          {typeof currentPet.age === 'object' 
+                            ? `${currentPet.age.value} ${currentPet.age.unit}${currentPet.age.value > 1 ? 's' : ''}`
+                            : currentPet.age}
+                        </Text>
                       </View>
                     )}
                     {currentPet.gender && (
@@ -184,6 +195,16 @@ const AdoptionScreen = ({ navigation }) => {
                         </Text>
                       </View>
                     )}
+                    {currentPet.size && (
+                      <View style={styles.detailItem}>
+                        <Ionicons name="resize" size={16} color={theme.colors.textSecondary} />
+                        <Text style={styles.detailText}>
+                          {typeof currentPet.size === 'object'
+                            ? currentPet.size.category || 'Unknown'
+                            : currentPet.size}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
                   {currentPet.description && (
@@ -195,7 +216,11 @@ const AdoptionScreen = ({ navigation }) => {
                   {currentPet.healthStatus && (
                     <View style={styles.healthSection}>
                       <Ionicons name="medical" size={16} color={theme.colors.accent} />
-                      <Text style={styles.healthText}>{currentPet.healthStatus}</Text>
+                      <Text style={styles.healthText}>
+                        {typeof currentPet.healthStatus === 'object'
+                          ? `${currentPet.healthStatus.vaccinated ? 'Vaccinated' : 'Not Vaccinated'}${currentPet.healthStatus.neutered ? ', Neutered' : ''}`
+                          : currentPet.healthStatus}
+                      </Text>
                     </View>
                   )}
 
@@ -292,6 +317,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 300,
     backgroundColor: theme.colors.gray200,
+  },
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   petInfo: {
     padding: theme.spacing.lg,

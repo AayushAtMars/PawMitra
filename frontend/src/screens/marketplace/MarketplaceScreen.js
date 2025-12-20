@@ -3,95 +3,212 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
-  Image,
-  RefreshControl,
-  ActivityIndicator,
   TextInput,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { marketplaceAPI } from '../../services/api';
-import { getCurrentLocation, formatDistance, calculateDistance } from '../../utils/geolocation';
 import theme from '../../theme';
 
 const MarketplaceScreen = ({ navigation }) => {
   const [services, setServices] = useState([]);
+  const [filteredServices, setFilteredServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [userLocation, setUserLocation] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const categories = [
-    { id: 'all', name: 'All', icon: 'grid' },
-    { id: 'veterinary', name: 'Vets', icon: 'medical' },
-    { id: 'pet_shop', name: 'Shops', icon: 'storefront' },
+    { id: 'all', name: 'All', icon: 'apps' },
+    { id: 'pet_shop', name: 'Pet Shop', icon: 'storefront' },
+    { id: 'veterinary', name: 'Vet', icon: 'medical' },
     { id: 'grooming', name: 'Grooming', icon: 'cut' },
     { id: 'training', name: 'Training', icon: 'school' },
+    { id: 'boarding', name: 'Boarding', icon: 'home' },
   ];
 
   useEffect(() => {
-    getUserLocation();
     loadServices();
-  }, [selectedCategory]);
+  }, []);
 
-  const getUserLocation = async () => {
-    const result = await getCurrentLocation();
-    if (result.success) {
-      setUserLocation(result.location);
-    }
-  };
+  useEffect(() => {
+    filterServices();
+  }, [searchQuery, selectedCategory, services]);
 
   const loadServices = async () => {
     try {
       setLoading(true);
-      
-      if (userLocation) {
-        const response = await marketplaceAPI.getNearbyServices({
-          longitude: userLocation.coordinates[0],
-          latitude: userLocation.coordinates[1],
-          category: selectedCategory === 'all' ? undefined : selectedCategory,
-          maxDistance: 10000, // 10km
-        });
-        
-        if (response.data.success) {
-          setServices(response.data.services);
-        }
-      } else {
-        const response = await marketplaceAPI.getServices({
-          category: selectedCategory === 'all' ? undefined : selectedCategory,
-        });
-        
-        if (response.data.success) {
-          setServices(response.data.services);
-        }
-      }
+      const response = await marketplaceAPI.getServices();
+      setServices(response.data.services || response.data || []);
     } catch (error) {
       console.error('Error loading services:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadServices();
-    setRefreshing(false);
+  const filterServices = () => {
+    let filtered = services;
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(s => s.category === selectedCategory);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter(s =>
+        s.businessName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredServices(filtered);
   };
 
-  const filteredServices = services.filter(service =>
-    service.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    service.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadServices();
+  };
+
+  const handleContact = (service) => {
+    if (service.contactInfo?.phone) {
+      Linking.openURL(`tel:${service.contactInfo.phone}`);
+    }
+  };
+
+  const renderServiceCard = ({ item }) => (
+    <TouchableOpacity
+      style={styles.serviceCard}
+      onPress={() => {/* Navigate to service details */}}
+    >
+      {/* Service Logo */}
+      <View style={styles.cardHeader}>
+        {item.logo?.url ? (
+          <Image source={{ uri: item.logo.url }} style={styles.serviceLogo} />
+        ) : (
+          <View style={[styles.serviceLogo, styles.logoPlaceholder]}>
+            <Ionicons name="business" size={32} color={theme.colors.gray400} />
+          </View>
+        )}
+        
+        <View style={styles.serviceInfo}>
+          <Text style={styles.serviceName} numberOfLines={1}>{item.businessName}</Text>
+          <Text style={styles.serviceCategory}>
+            {item.category?.replace('_', ' ').toUpperCase()}
+          </Text>
+          {item.emergencyAvailable && (
+            <View style={styles.emergencyBadge}>
+              <Ionicons name="medical" size={12} color={theme.colors.error} />
+              <Text style={styles.emergencyText}>
+                Emergency {item.emergency24x7 && '24/7'}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={[
+          styles.statusDot,
+          { backgroundColor: item.isActive ? theme.colors.success : theme.colors.gray400 }
+        ]} />
+      </View>
+
+      {/* Service Description */}
+      {item.description && (
+        <Text style={styles.serviceDescription} numberOfLines={2}>
+          {item.description}
+        </Text>
+      )}
+
+      {/* Contact Info */}
+      <View style={styles.contactRow}>
+        {item.contactInfo?.phone && (
+          <View style={styles.contactItem}>
+            <Ionicons name="call" size={14} color={theme.colors.primary} />
+            <Text style={styles.contactText}>{item.contactInfo.phone}</Text>
+          </View>
+        )}
+        {item.contactInfo?.email && (
+          <View style={styles.contactItem}>
+            <Ionicons name="mail" size={14} color={theme.colors.primary} />
+            <Text style={styles.contactText} numberOfLines={1}>{item.contactInfo.email}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Action Button */}
+      <TouchableOpacity
+        style={styles.contactButton}
+        onPress={() => handleContact(item)}
+      >
+        <Ionicons name="call" size={18} color={theme.colors.white} />
+        <Text style={styles.contactButtonText}>Contact</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
   );
+
+  const renderCategoryFilter = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryChip,
+        selectedCategory === item.id && styles.categoryChipActive
+      ]}
+      onPress={() => setSelectedCategory(item.id)}
+    >
+      <Ionicons
+        name={item.icon}
+        size={18}
+        color={selectedCategory === item.id ? theme.colors.white : theme.colors.primary}
+      />
+      <Text style={[
+        styles.categoryText,
+        selectedCategory === item.id && styles.categoryTextActive
+      ]}>
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="business-outline" size={64} color={theme.colors.gray300} />
+      <Text style={styles.emptyTitle}>No Services Found</Text>
+      <Text style={styles.emptyText}>
+        {searchQuery || selectedCategory !== 'all'
+          ? 'Try adjusting your filters'
+          : 'Be the first to register your service!'}
+      </Text>
+      <TouchableOpacity
+        style={styles.registerButton}
+        onPress={() => navigation.navigate('RegisterService')}
+      >
+        <Ionicons name="add-circle" size={20} color={theme.colors.white} />
+        <Text style={styles.registerButtonText}>Register Service</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Pet Services</Text>
-        <TouchableOpacity style={styles.emergencyButton}>
-          <Ionicons name="alert-circle" size={24} color={theme.colors.error} />
+        <Text style={styles.title}>Marketplace</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('MyServices')}>
+          <Ionicons name="briefcase" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -101,172 +218,39 @@ const MarketplaceScreen = ({ navigation }) => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search services..."
-          placeholderTextColor={theme.colors.gray400}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          placeholderTextColor={theme.colors.gray400}
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color={theme.colors.gray400} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Category Filter */}
-      <ScrollView
+      {/* Category Filters */}
+      <FlatList
         horizontal
+        data={categories}
+        renderItem={renderCategoryFilter}
+        keyExtractor={(item) => item.id}
         showsHorizontalScrollIndicator={false}
-        style={styles.categoriesContainer}
-        contentContainerStyle={styles.categoriesContent}
-      >
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[
-              styles.categoryButton,
-              selectedCategory === category.id && styles.categoryButtonActive,
-            ]}
-            onPress={() => setSelectedCategory(category.id)}
-          >
-            <Ionicons
-              name={category.icon}
-              size={20}
-              color={
-                selectedCategory === category.id
-                  ? theme.colors.white
-                  : theme.colors.gray600
-              }
-            />
-            <Text
-              style={[
-                styles.categoryText,
-                selectedCategory === category.id && styles.categoryTextActive,
-              ]}
-            >
-              {category.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        contentContainerStyle={styles.categoriesContainer}
+        style={styles.categoriesList}
+      />
 
       {/* Services List */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.servicesList}
-          contentContainerStyle={styles.servicesContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {filteredServices.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="storefront-outline" size={64} color={theme.colors.gray300} />
-              <Text style={styles.emptyText}>No services found</Text>
-              <Text style={styles.emptySubtext}>Try a different category or location</Text>
-            </View>
-          ) : (
-            filteredServices.map((service) => (
-              <ServiceCard
-                key={service._id}
-                service={service}
-                userLocation={userLocation}
-              />
-            ))
-          )}
-        </ScrollView>
-      )}
-    </View>
-  );
-};
-
-// Service Card Component
-const ServiceCard = ({ service, userLocation }) => {
-  const distance = userLocation && service.location
-    ? calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        service.location.coordinates[1],
-        service.location.coordinates[0]
-      )
-    : null;
-
-  return (
-    <View style={styles.serviceCard}>
-      {/* Service Image/Logo */}
-      <View style={styles.serviceImageContainer}>
-        {service.logo?.url ? (
-          <Image source={{ uri: service.logo.url }} style={styles.serviceLogo} />
-        ) : (
-          <View style={[styles.serviceLogo, styles.serviceLogoPlaceholder]}>
-            <Ionicons name="storefront" size={32} color={theme.colors.gray400} />
-          </View>
-        )}
-        {service.isPremium && (
-          <View style={styles.premiumBadge}>
-            <Ionicons name="star" size={12} color={theme.colors.white} />
-          </View>
-        )}
-      </View>
-
-      {/* Service Info */}
-      <View style={styles.serviceInfo}>
-        <Text style={styles.serviceName}>{service.businessName}</Text>
-        
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryBadgeText}>
-            {service.category.replace('_', ' ').toUpperCase()}
-          </Text>
-        </View>
-
-        {service.description && (
-          <Text style={styles.serviceDescription} numberOfLines={2}>
-            {service.description}
-          </Text>
-        )}
-
-        {/* Rating */}
-        {service.ratings?.average > 0 && (
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={16} color={theme.colors.warning} />
-            <Text style={styles.ratingText}>
-              {service.ratings.average.toFixed(1)} ({service.ratings.count} reviews)
-            </Text>
-          </View>
-        )}
-
-        {/* Distance */}
-        {distance && (
-          <View style={styles.distanceContainer}>
-            <Ionicons name="location" size={16} color={theme.colors.primary} />
-            <Text style={styles.distanceText}>{formatDistance(distance)} away</Text>
-          </View>
-        )}
-
-        {/* Emergency Badge */}
-        {service.emergencyAvailable && (
-          <View style={styles.emergencyBadge}>
-            <Ionicons name="flash" size={14} color={theme.colors.error} />
-            <Text style={styles.emergencyText}>
-              {service.emergency24x7 ? '24/7 Emergency' : 'Emergency Available'}
-            </Text>
-          </View>
-        )}
-
-        {/* Contact Button */}
-        <View style={styles.contactButtons}>
-          {service.contactInfo?.phone && (
-            <TouchableOpacity style={styles.contactButton}>
-              <Ionicons name="call" size={18} color={theme.colors.primary} />
-              <Text style={styles.contactButtonText}>Call</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={[styles.contactButton, styles.viewButton]}>
-            <Ionicons name="information-circle" size={18} color={theme.colors.white} />
-            <Text style={[styles.contactButtonText, styles.viewButtonText]}>
-              View Details
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <FlatList
+        data={filteredServices}
+        renderItem={renderServiceCard}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={renderEmpty}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      />
     </View>
   );
 };
@@ -275,6 +259,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -289,9 +278,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.xxl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
-  },
-  emergencyButton: {
-    padding: theme.spacing.sm,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -310,82 +296,63 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.textPrimary,
   },
-  categoriesContainer: {
-    maxHeight: 60,
+  categoriesList: {
+    flexGrow: 0,
   },
-  categoriesContent: {
+  categoriesContainer: {
     paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
     gap: theme.spacing.sm,
   },
-  categoryButton: {
+  categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.white,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.full,
-    gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: theme.colors.gray200,
-  },
-  categoryButtonActive: {
-    backgroundColor: theme.colors.primary,
     borderColor: theme.colors.primary,
+    gap: theme.spacing.xs,
+  },
+  categoryChipActive: {
+    backgroundColor: theme.colors.primary,
   },
   categoryText: {
     fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.gray600,
+    color: theme.colors.primary,
     fontWeight: theme.typography.fontWeight.medium,
   },
   categoryTextActive: {
     color: theme.colors.white,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  servicesList: {
-    flex: 1,
-  },
-  servicesContent: {
+  listContent: {
     padding: theme.spacing.lg,
   },
   serviceCard: {
-    flexDirection: 'row',
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
     ...theme.shadows.sm,
   },
-  serviceImageContainer: {
-    position: 'relative',
+  cardHeader: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.md,
   },
   serviceLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: theme.borderRadius.md,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: theme.spacing.md,
   },
-  serviceLogoPlaceholder: {
+  logoPlaceholder: {
     backgroundColor: theme.colors.gray100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  premiumBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: theme.colors.warning,
-    borderRadius: theme.borderRadius.full,
-    width: 24,
-    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   serviceInfo: {
     flex: 1,
-    marginLeft: theme.spacing.md,
   },
   serviceName: {
     fontSize: theme.typography.fontSize.lg,
@@ -393,102 +360,99 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.xs,
   },
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: theme.colors.primary + '20',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 2,
-    borderRadius: theme.borderRadius.sm,
-    marginBottom: theme.spacing.xs,
-  },
-  categoryBadgeText: {
+  serviceCategory: {
     fontSize: theme.typography.fontSize.xs,
     color: theme.colors.primary,
     fontWeight: theme.typography.fontWeight.semibold,
-  },
-  serviceDescription: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
     marginBottom: theme.spacing.xs,
-  },
-  ratingText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-  },
-  distanceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    marginBottom: theme.spacing.xs,
-  },
-  distanceText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.primary,
-    fontWeight: theme.typography.fontWeight.medium,
   },
   emergencyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs,
     backgroundColor: theme.colors.error + '10',
-    alignSelf: 'flex-start',
-    paddingHorizontal: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs,
     paddingVertical: 2,
     borderRadius: theme.borderRadius.sm,
-    marginBottom: theme.spacing.sm,
+    alignSelf: 'flex-start',
+    gap: 4,
   },
   emergencyText: {
-    fontSize: theme.typography.fontSize.xs,
+    fontSize: 10,
     color: theme.colors.error,
     fontWeight: theme.typography.fontWeight.semibold,
   },
-  contactButtons: {
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  serviceDescription: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+    lineHeight: 20,
+  },
+  contactRow: {
     flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flex: 1,
+  },
+  contactText: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.textSecondary,
+    flex: 1,
   },
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.gray100,
-    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.primary,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
     gap: theme.spacing.xs,
   },
-  viewButton: {
-    backgroundColor: theme.colors.primary,
-    flex: 1,
-  },
   contactButtonText: {
+    color: theme.colors.white,
     fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.primary,
     fontWeight: theme.typography.fontWeight.semibold,
   },
-  viewButtonText: {
-    color: theme.colors.white,
-  },
-  emptyState: {
+  emptyContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: theme.spacing.xxl * 2,
   },
-  emptyText: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.md,
+  emptyTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.textPrimary,
+    marginTop: theme.spacing.lg,
   },
-  emptySubtext: {
-    fontSize: theme.typography.fontSize.sm,
+  emptyText: {
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
+  },
+  registerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    gap: theme.spacing.sm,
+  },
+  registerButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
 });
 

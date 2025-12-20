@@ -39,8 +39,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login({ email, password });
       const { token, user: userData } = response.data;
 
+      console.log('Login successful, saving token...');
       await AsyncStorage.setItem('authToken', token);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
+      console.log('Token saved to storage');
 
       setUser(userData);
       setIsAuthenticated(true);
@@ -63,8 +65,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(userData);
       const { token, user: newUser } = response.data;
 
+      console.log('Registration successful, saving token...');
       await AsyncStorage.setItem('authToken', token);
       await AsyncStorage.setItem('user', JSON.stringify(newUser));
+      console.log('Token saved to storage');
 
       setUser(newUser);
       setIsAuthenticated(true);

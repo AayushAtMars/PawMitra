@@ -15,7 +15,7 @@ import theme from '../../theme';
 const ProfileScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -25,7 +25,11 @@ const ProfileScreen = ({ navigation }) => {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
-            await logout();
+            try {
+              await logout();
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
           },
         },
       ]
@@ -37,37 +41,66 @@ const ProfileScreen = ({ navigation }) => {
       id: 1,
       title: 'Edit Profile',
       icon: 'person-outline',
-      onPress: () => {},
+      onPress: () => Alert.alert('Edit Profile', 'Profile editing coming soon!'),
     },
     {
       id: 2,
       title: 'My Reports',
       icon: 'document-text-outline',
-      onPress: () => {},
+      onPress: () => Alert.alert('My Reports', 'View your incident reports here'),
     },
     {
       id: 3,
       title: 'Saved Pets',
       icon: 'heart-outline',
-      onPress: () => {},
+      onPress: () => Alert.alert('Saved Pets', 'Your saved pets will appear here'),
     },
     {
       id: 4,
-      title: 'Settings',
-      icon: 'settings-outline',
-      onPress: () => {},
+      title: 'Add Pet for Adoption',
+      icon: 'add-circle-outline',
+      onPress: () => navigation.navigate('AddPet'),
+      show: user?.role === 'ngo' || user?.role === 'volunteer',
     },
     {
       id: 5,
-      title: 'Help & Support',
-      icon: 'help-circle-outline',
-      onPress: () => {},
+      title: 'My Pets',
+      icon: 'paw-outline',
+      onPress: () => navigation.navigate('MyPets'),
+      show: user?.role === 'ngo' || user?.role === 'volunteer',
     },
     {
       id: 6,
+      title: 'My Services',
+      icon: 'briefcase-outline',
+      onPress: () => navigation.navigate('MyServices'),
+    },
+    {
+      id: 7,
+      title: 'Register Service',
+      icon: 'business-outline',
+      onPress: () => navigation.navigate('RegisterService'),
+    },
+    {
+      id: 8,
+      title: 'Settings',
+      icon: 'settings-outline',
+      onPress: () => Alert.alert('Settings', 'App settings coming soon!'),
+    },
+    {
+      id: 9,
+      title: 'Help & Support',
+      icon: 'help-circle-outline',
+      onPress: () => Alert.alert('Help & Support', 'Contact us at support@pawmitra.com'),
+    },
+    {
+      id: 10,
       title: 'About',
       icon: 'information-circle-outline',
-      onPress: () => {},
+      onPress: () => Alert.alert(
+        'About PawMitra',
+        'PawMitra is a hyperlocal smart network for animal welfare.\n\nVersion 1.0.0\n\nMaking a difference, one paw at a time 🐾'
+      ),
     },
   ];
 
@@ -115,7 +148,7 @@ const ProfileScreen = ({ navigation }) => {
 
       {/* Menu Items */}
       <View style={styles.menuContainer}>
-        {menuItems.map((item) => (
+        {menuItems.filter(item => item.show !== false).map((item) => (
           <TouchableOpacity
             key={item.id}
             style={styles.menuItem}

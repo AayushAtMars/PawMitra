@@ -3,15 +3,20 @@ import passport from 'passport';
 
 // Middleware to verify JWT token
 export const authenticate = (req, res, next) => {
+  console.log('Auth middleware - Headers:', req.headers.authorization);
+  
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
     if (err) {
+      console.error('Auth error:', err);
       return res.status(500).json({ error: 'Authentication error' });
     }
     
     if (!user) {
+      console.log('No user found. Info:', info);
       return res.status(401).json({ error: 'Unauthorized. Please login.' });
     }
     
+    console.log('User authenticated:', user.email);
     req.user = user;
     next();
   })(req, res, next);

@@ -18,8 +18,12 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
+      console.log('Token from storage:', token ? 'Token exists' : 'No token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Authorization header set');
+      } else {
+        console.warn('No auth token found in storage');
       }
     } catch (error) {
       console.error('Error getting auth token:', error);

@@ -13,7 +13,11 @@ import HomeScreen from '../screens/home/HomeScreen';
 import ReportIncidentScreen from '../screens/incident/ReportIncidentScreen';
 import VolunteerDashboardScreen from '../screens/volunteer/VolunteerDashboardScreen';
 import AdoptionScreen from '../screens/adoption/AdoptionScreen';
+import AddPetScreen from '../screens/adoption/AddPetScreen';
+import MyPetsScreen from '../screens/adoption/MyPetsScreen';
 import MarketplaceScreen from '../screens/marketplace/MarketplaceScreen';
+import RegisterServiceScreen from '../screens/marketplace/RegisterServiceScreen';
+import MyServicesScreen from '../screens/marketplace/MyServicesScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
 const Stack = createStackNavigator();
@@ -98,7 +102,47 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {isAuthenticated ? <MainTabs /> : <AuthStack />}
+      {isAuthenticated ? (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen 
+            name="AddPet" 
+            component={AddPetScreen}
+            options={{ 
+              headerShown: true,
+              title: 'Add Pet',
+              presentation: 'modal'
+            }}
+          />
+          <Stack.Screen 
+            name="RegisterService" 
+            component={RegisterServiceScreen}
+            options={{ 
+              headerShown: true,
+              title: 'Register Service',
+              presentation: 'modal'
+            }}
+          />
+          <Stack.Screen 
+            name="MyServices" 
+            component={MyServicesScreen}
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }}
+          />
+          <Stack.Screen 
+            name="MyPets" 
+            component={MyPetsScreen}
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }}
+          />
+        </Stack.Navigator>
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 };

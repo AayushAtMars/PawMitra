@@ -1,176 +1,128 @@
 import * as Location from 'expo-location';
 
-// Request location permissions
-export const requestLocationPermission = async () => {
+/**
+ * Get current user location
+ * @returns {Promise<Object>} Location result with success flag and location data
+ */
+export const getCurrentLocation = async () => {
   try {
+    // Request location permissions
     const { status } = await Location.requestForegroundPermissionsAsync();
     
     if (status !== 'granted') {
+      console.error('Location permission denied');
       return {
         success: false,
-        error: 'Location permission denied'
+        error: 'Location permission denied',
       };
     }
 
-    return { success: true };
-  } catch (error) {
-    console.error('Error requesting location permission:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-// Request background location permissions
-export const requestBackgroundLocationPermission = async () => {
-  try {
-    const { status } = await Location.requestBackgroundPermissionsAsync();
-    
-    if (status !== 'granted') {
-      return {
-        success: false,
-        error: 'Background location permission denied'
-      };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error requesting background location permission:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-// Get current location
-export const getCurrentLocation = async () => {
-  try {
-    const { status } = await Location.getForegroundPermissionsAsync();
-    
-    if (status !== 'granted') {
-      const permissionResult = await requestLocationPermission();
-      if (!permissionResult.success) {
-        return { success: false, error: permissionResult.error };
-      }
-    }
-
-    const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.High
+    // Get current position
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
     });
 
     return {
       success: true,
       location: {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        coordinates: [location.coords.longitude, location.coords.latitude] // GeoJSON format
-      }
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        coordinates: [position.coords.longitude, position.coords.latitude], // GeoJSON format [lng, lat]
+      },
     };
   } catch (error) {
-    console.error('Error getting current location:', error);
+    console.error('Error getting location:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
 
-// Watch location changes
-export const watchLocation = async (callback) => {
-  try {
-    const { status } = await Location.getForegroundPermissionsAsync();
-    
-    if (status !== 'granted') {
-      const permissionResult = await requestLocationPermission();
-      if (!permissionResult.success) {
-        return null;
-      }
-    }
-
-    const subscription = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 10000, // Update every 10 seconds
-        distanceInterval: 50, // Update every 50 meters
-      },
-      (location) => {
-        callback({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          coordinates: [location.coords.longitude, location.coords.latitude]
-        });
-      }
-    );
-
-    return subscription;
-  } catch (error) {
-    console.error('Error watching location:', error);
-    return null;
-  }
-};
-
-// Reverse geocoding (get address from coordinates)
+/**
+ * Reverse geocode coordinates to address
+ * @param {number} latitude
+ * @param {number} longitude
+ * @returns {Promise<Object>} Address result
+ */
 export const reverseGeocode = async (latitude, longitude) => {
   try {
-    const addresses = await Location.reverseGeocodeAsync({
+    const result = await Location.reverseGeocodeAsync({
       latitude,
-      longitude
+      longitude,
     });
 
-    if (addresses.length > 0) {
-      const address = addresses[0];
+    if (result && result.length > 0) {
+      const address = result[0];
       const formattedAddress = [
         address.name,
         address.street,
         address.city,
         address.region,
-        address.postalCode,
-        address.country
-      ].filter(Boolean).join(', ');
+        address.country,
+      ]
+        .filter(Boolean)
+        .join(', ');
 
       return {
         success: true,
-        address: formattedAddress,
-        details: address
+        address: formattedAddress || 'Address not available',
+        details: address,
       };
     }
 
     return {
       success: false,
-      error: 'No address found'
+      error: 'No address found',
     };
   } catch (error) {
     console.error('Error reverse geocoding:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
+      address: 'Address not available',
     };
   }
 };
 
-// Calculate distance between two points (Haversine formula)
+/**
+ * Calculate distance between two coordinates (Haversine formula)
+ * @param {number} lat1
+ * @param {number} lon1
+ * @param {number} lat2
+ * @param {number} lon2
+ * @returns {number} Distance in kilometers
+ */
 export const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Radius of the Earth in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const R = 6371; // Earth's radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
   
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distance in km
+  const distance = R * c;
   
   return distance;
 };
 
-// Format distance for display
-export const formatDistance = (distanceInKm) => {
-  if (distanceInKm < 1) {
-    return `${Math.round(distanceInKm * 1000)}m`;
+const toRad = (degrees) => {
+  return degrees * (Math.PI / 180);
+};
+
+/**
+ * Format distance for display
+ * @param {number} distanceKm Distance in kilometers
+ * @returns {string} Formatted distance string
+ */
+export const formatDistance = (distanceKm) => {
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)}m`;
   }
-  return `${distanceInKm.toFixed(1)}km`;
+  return `${distanceKm.toFixed(1)}km`;
 };

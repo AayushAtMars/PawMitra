@@ -63,7 +63,7 @@ const ReportIncidentScreen = ({ navigation }) => {
       });
       setPhoto(photo);
       setShowCamera(false);
-      analyzeImage(photo.base64);
+      // Don't auto-submit, let user review first
     }
   };
 
@@ -78,11 +78,16 @@ const ReportIncidentScreen = ({ navigation }) => {
 
     if (!result.canceled) {
       setPhoto(result.assets[0]);
-      analyzeImage(result.assets[0].base64);
+      // Don't auto-submit, let user review first
     }
   };
 
-  const analyzeImage = async (base64) => {
+  const submitReport = async () => {
+    if (!photo || !location) {
+      Alert.alert('Error', 'Photo and location are required');
+      return;
+    }
+
     setAnalyzing(true);
     setAiResult(null);
 
@@ -93,7 +98,7 @@ const ReportIncidentScreen = ({ navigation }) => {
           coordinates: location.coordinates,
         },
         address: address || 'Location not available',
-        imageBase64: `data:image/jpeg;base64,${base64}`,
+        imageBase64: `data:image/jpeg;base64,${photo.base64}`,
         description: 'Reported via mobile app',
       });
 
@@ -248,8 +253,23 @@ const ReportIncidentScreen = ({ navigation }) => {
             </View>
           )}
 
+          <TouchableOpacity 
+            style={styles.submitButton} 
+            onPress={submitReport}
+            disabled={analyzing}
+          >
+            {analyzing ? (
+              <ActivityIndicator color={theme.colors.white} />
+            ) : (
+              <>
+                <Ionicons name="send" size={20} color={theme.colors.white} />
+                <Text style={styles.submitText}>Submit Report</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.retakeButton} onPress={retake}>
-            <Ionicons name="refresh" size={20} color={theme.colors.white} />
+            <Ionicons name="refresh" size={20} color={theme.colors.gray600} />
             <Text style={styles.retakeText}>Retake Photo</Text>
           </TouchableOpacity>
         </View>
@@ -445,17 +465,35 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     marginTop: theme.spacing.xs,
   },
+  submitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.secondary,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginTop: theme.spacing.md,
+    ...theme.shadows.md,
+  },
+  submitText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginLeft: theme.spacing.sm,
+  },
   retakeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.gray300,
   },
   retakeText: {
-    color: theme.colors.white,
+    color: theme.colors.gray600,
     fontSize: theme.typography.fontSize.md,
     fontWeight: theme.typography.fontWeight.semibold,
     marginLeft: theme.spacing.sm,

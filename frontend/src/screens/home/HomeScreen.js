@@ -1,19 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { incidentsAPI, petsAPI, volunteersAPI } from '../../services/api';
 import theme from '../../theme';
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState({
+    totalIncidents: 0,
+    activeIncidents: 0,
+    petsAvailable: 0,
+    volunteersActive: 0,
+  });
+  const [recentIncidents, setRecentIncidents] = useState([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch statistics and recent data
+      const [incidentsRes, petsRes, volunteersRes] = await Promise.all([
+        incidentsAPI.getAll({ limit: 5 }),
+        petsAPI.getAll({ status: 'available', limit: 3 }),
+        volunteersAPI.getStats().catch(() => ({ data: { activeVolunteers: 0 } })),
+      ]);
+
+      setStats({
+        totalIncidents: incidentsRes.data.total || 0,
+        activeIncidents: incidentsRes.data.incidents?.filter(i => i.status === 'reported').length || 0,
+        petsAvailable: petsRes.data.pets?.length || 0,
+        volunteersActive: volunteersRes.data.activeVolunteers || 0,
+      });
+
+      setRecentIncidents(incidentsRes.data.incidents || []);
+    } catch (error) {
+      console.error('Error loading home data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
 
   const quickActions = [
     {
@@ -21,96 +67,152 @@ const HomeScreen = ({ navigation }) => {
       title: 'Report Incident',
       icon: 'camera',
       color: theme.colors.error,
-      screen: 'Report',
+      onPress: () => navigation.navigate('Report'),
     },
     {
       id: 2,
-      title: 'Adopt a Pet',
+      title: 'Find Pet',
       icon: 'paw',
       color: theme.colors.secondary,
-      screen: 'Adoption',
+      onPress: () => navigation.navigate('Adoption'),
     },
     {
       id: 3,
-      title: 'Find Services',
+      title: 'Services',
       icon: 'storefront',
-      color: theme.colors.accent,
-      screen: 'Marketplace',
-    },
-    ...(user?.isVolunteer ? [{
-      id: 4,
-      title: 'Volunteer Tasks',
-      icon: 'heart',
       color: theme.colors.primary,
-      screen: 'Volunteer',
-    }] : []),
+      onPress: () => navigation.navigate('Marketplace'),
+    },
+    {
+      id: 4,
+      title: 'Volunteer',
+      icon: 'heart',
+      color: theme.colors.accent,
+      onPress: () => user?.isVolunteer 
+        ? navigation.navigate('Volunteer')
+        : navigation.navigate('Profile'),
+    },
   ];
 
+  const renderStatCard = (title, value, icon, color) => (
+    <View style={[styles.statCard, { borderLeftColor: color }]}>
+      <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
+        <Ionicons name={icon} size={24} color={color} />
+      </View>
+      <View style={styles.statInfo}>
+        <Text style={styles.statValue}>{value}</Text>
+        <Text style={styles.statLabel}>{title}</Text>
+      </View>
+    </View>
+  );
+
+  const renderIncidentCard = (incident) => (
+    <TouchableOpacity
+      key={incident._id}
+      style={styles.incidentCard}
+      onPress={() => {/* Navigate to incident details */}}
+    >
+      <View style={[styles.priorityBadge, { 
+        backgroundColor: incident.priority === 'high' 
+          ? theme.colors.error 
+          : incident.priority === 'medium'
+          ? theme.colors.warning
+          : theme.colors.success
+      }]}>
+        <Text style={styles.priorityText}>{incident.priority?.toUpperCase()}</Text>
+      </View>
+      <Text style={styles.incidentType}>{incident.animalType || 'Animal'} in distress</Text>
+      <Text style={styles.incidentLocation} numberOfLines={1}>
+        <Ionicons name="location" size={12} color={theme.colors.textSecondary} />
+        {' '}{incident.address || 'Location not available'}
+      </Text>
+      <Text style={styles.incidentTime}>
+        {new Date(incident.createdAt).toLocaleDateString()}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello, {user?.name || 'Friend'}! 👋</Text>
-            <Text style={styles.subtitle}>Let's make a difference today</Text>
-          </View>
-          <TouchableOpacity style={styles.avatarContainer}>
-            <Ionicons name="person-circle" size={48} color={theme.colors.primary} />
-          </TouchableOpacity>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0] || 'Friend'}! 👋</Text>
+          <Text style={styles.subtitle}>Making a difference together</Text>
         </View>
-
-        {/* Stats Card (for volunteers) */}
-        {user?.isVolunteer && (
-          <View style={styles.statsCard}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user.volunteerData?.karmaPoints || 0}</Text>
-              <Text style={styles.statLabel}>Karma Points</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user.volunteerData?.tasksCompleted || 0}</Text>
-              <Text style={styles.statLabel}>Tasks Done</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user.volunteerData?.badges?.length || 0}</Text>
-              <Text style={styles.statLabel}>Badges</Text>
-            </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="person" size={24} color={theme.colors.white} />
           </View>
-        )}
+        </TouchableOpacity>
+      </View>
 
-        {/* Quick Actions */}
+      {/* Quick Actions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.quickActions}>
+          {quickActions.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.actionButton}
+              onPress={action.onPress}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: action.color }]}>
+                <Ionicons name={action.icon} size={28} color={theme.colors.white} />
+              </View>
+              <Text style={styles.actionText}>{action.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Statistics */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Community Impact</Text>
+        <View style={styles.statsGrid}>
+          {renderStatCard('Active Incidents', stats.activeIncidents, 'alert-circle', theme.colors.error)}
+          {renderStatCard('Pets Available', stats.petsAvailable, 'paw', theme.colors.secondary)}
+          {renderStatCard('Active Volunteers', stats.volunteersActive, 'people', theme.colors.primary)}
+          {renderStatCard('Total Reports', stats.totalIncidents, 'document-text', theme.colors.accent)}
+        </View>
+      </View>
+
+      {/* Recent Incidents */}
+      {recentIncidents.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsGrid}>
-            {quickActions.map((action) => (
-              <TouchableOpacity
-                key={action.id}
-                style={styles.actionCard}
-                onPress={() => navigation.navigate(action.screen)}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: action.color + '20' }]}>
-                  <Ionicons name={action.icon} size={32} color={action.color} />
-                </View>
-                <Text style={styles.actionTitle}>{action.title}</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Incidents</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Report')}>
+              <Text style={styles.seeAll}>See All</Text>
+            </TouchableOpacity>
           </View>
+          {recentIncidents.map(renderIncidentCard)}
         </View>
+      )}
 
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <View style={styles.emptyState}>
-            <Ionicons name="paw-outline" size={64} color={theme.colors.gray300} />
-            <Text style={styles.emptyText}>No recent activity</Text>
-            <Text style={styles.emptySubtext}>Start by reporting an incident or adopting a pet</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      {/* Community Message */}
+      <View style={styles.communityCard}>
+        <Ionicons name="heart" size={32} color={theme.colors.secondary} />
+        <Text style={styles.communityTitle}>Thank you for being a PawMitra!</Text>
+        <Text style={styles.communityText}>
+          Together we've helped countless animals find safety and homes.
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -119,57 +221,49 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   scrollContent: {
-    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.gray100,
   },
   greeting: {
-    fontSize: theme.typography.fontSize.xxl,
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
-  },
-  avatarContainer: {
-    ...theme.shadows.sm,
-  },
-  statsCard: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.md,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.primary,
-  },
-  statLabel: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: theme.colors.gray200,
-    marginHorizontal: theme.spacing.md,
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   section: {
-    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.lg,
@@ -177,50 +271,121 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.md,
   },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.md,
+  seeAll: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
-  actionCard: {
-    width: '48%',
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  actionButton: {
+    flex: 1,
     alignItems: 'center',
+    backgroundColor: theme.colors.white,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
     ...theme.shadows.sm,
   },
   actionIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: theme.borderRadius.full,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
-  actionTitle: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+  actionText: {
+    fontSize: theme.typography.fontSize.xs,
     color: theme.colors.textPrimary,
+    fontWeight: theme.typography.fontWeight.medium,
     textAlign: 'center',
   },
-  emptyState: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.xxl,
+  statsGrid: {
+    gap: theme.spacing.md,
+  },
+  statCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: theme.colors.white,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    borderLeftWidth: 4,
     ...theme.shadows.sm,
   },
-  emptyText: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.md,
+  statIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
   },
-  emptySubtext: {
+  statInfo: {
+    flex: 1,
+  },
+  statValue: {
+    fontSize: theme.typography.fontSize.xxl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.textPrimary,
+  },
+  statLabel: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+  },
+  incidentCard: {
+    backgroundColor: theme.colors.white,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.sm,
+    ...theme.shadows.sm,
+  },
+  priorityBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.xs,
+  },
+  priorityText: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.white,
+    fontWeight: theme.typography.fontWeight.bold,
+  },
+  incidentType: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs,
+  },
+  incidentLocation: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs,
+  },
+  incidentTime: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.textSecondary,
+  },
+  communityCard: {
+    backgroundColor: theme.colors.secondary + '10',
+    margin: theme.spacing.lg,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.lg,
+    alignItems: 'center',
+  },
+  communityTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.textPrimary,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+  },
+  communityText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
 });

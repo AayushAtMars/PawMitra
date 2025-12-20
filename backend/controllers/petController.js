@@ -25,8 +25,11 @@ export const addPet = async (req, res) => {
     let uploadedPhotos = [];
     if (photos && photos.length > 0) {
       for (let i = 0; i < photos.length; i++) {
+        // Handle both object { url: 'base64...' } and string 'base64...' formats
+        const photoData = typeof photos[i] === 'object' ? photos[i].url : photos[i];
+        
         const uploaded = await cloudinaryService.uploadBase64Image(
-          photos[i],
+          photoData,
           'pawmitra/pets'
         );
         uploadedPhotos.push({
