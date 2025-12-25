@@ -45,7 +45,7 @@ const VolunteerDashboardScreen = ({ navigation }) => {
       
       const [statsRes, tasksRes, leaderboardRes] = await Promise.all([
         volunteersAPI.getStats(),
-        incidentsAPI.getAll({ status: 'reported,volunteer_assigned', limit: 50 }),
+        incidentsAPI.getAll({ limit: 50 }), // Fetch all incidents like Home screen
         volunteersAPI.getLeaderboard({ limit: 10 }),
       ]);
 
@@ -53,19 +53,45 @@ const VolunteerDashboardScreen = ({ navigation }) => {
       
       const allIncidents = tasksRes.data.incidents || [];
       
-      // Filter my tasks (where I'm assigned)
-      const myTasks = allIncidents.filter(incident => 
-        incident.assignedVolunteers?.some(
-          av => av.volunteer._id === user.id || av.volunteer === user.id
-        )
-      );
+      // Filter my tasks (where I'm assigned AND not resolved)
+      const myTasks = allIncidents.filter(incident => {
+        // Exclude resolved incidents
+        if (incident.status === 'resolved') {
+          return false;
+        }
+        
+        // Check if assignedVolunteers exists and has entries
+        if (!incident.assignedVolunteers || incident.assignedVolunteers.length === 0) {
+          return false;
+        }
+        
+        // Check if current user is in the assigned volunteers
+        return incident.assignedVolunteers.some(av => {
+          const volunteerId = av.volunteer?._id || av.volunteer;
+          return volunteerId === user.id || volunteerId?.toString() === user.id;
+        });
+      });
       
-      // Filter available tasks (not assigned to me, not resolved)
-      const available = allIncidents.filter(incident => 
-        !incident.assignedVolunteers?.some(
-          av => av.volunteer._id === user.id || av.volunteer === user.id
-        ) && incident.status !== 'resolved'
-      );
+      // Filter available tasks (not assigned to anyone OR not assigned to me, and not resolved)
+      const available = allIncidents.filter(incident => {
+        // Exclude resolved incidents
+        if (incident.status === 'resolved') {
+          return false;
+        }
+        
+        // If no assignedVolunteers or empty array, it's available
+        if (!incident.assignedVolunteers || incident.assignedVolunteers.length === 0) {
+          return true;
+        }
+        
+        // If has assigned volunteers, check if current user is NOT in the list
+        const isAssignedToMe = incident.assignedVolunteers.some(av => {
+          const volunteerId = av.volunteer?._id || av.volunteer;
+          return volunteerId === user.id || volunteerId?.toString() === user.id;
+        });
+        
+        return !isAssignedToMe;
+      });
       
       setActiveTasks(myTasks);
       setAvailableTasks(available);
@@ -125,10 +151,16 @@ const VolunteerDashboardScreen = ({ navigation }) => {
       });
       
       setShowResolveModal(false);
+      setResolutionNotes('');
+      setSelectedTask(null);
+      
+      // Reload dashboard data immediately
+      loadDashboardData();
+      
+      // Show success message
       Alert.alert(
         'Success! 🎉',
-        `Incident resolved!\n+${response.data.karmaEarned} karma points earned!`,
-        [{ text: 'Awesome!', onPress: loadDashboardData }]
+        `Incident resolved!\n+${response.data.karmaEarned} karma points earned!`
       );
     } catch (error) {
       console.error('Error resolving incident:', error);
@@ -165,47 +197,71 @@ const VolunteerDashboardScreen = ({ navigation }) => {
         
         <View style={styles.taskActions}>
           {/* Check if this task is assigned to current user */}
-          {task.assignedVolunteers?.some(av => 
-            av.volunteer._id === user.id || av.volunteer === user.id
-          ) ? (
-            // Show resolve button for my tasks
-            <>
-              <TouchableOpacity
-                style={[styles.taskButton, styles.completeButton]}
-                onPress={() => handleCompleteTask(task)}
-              >
-                <Ionicons name="checkmark-circle" size={18} color={theme.colors.white} />
-                <Text style={styles.taskButtonText}>Mark Resolved</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.taskButton, styles.viewButton]}
-                onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
-              >
-                <Ionicons name="eye" size={18} color={theme.colors.primary} />
-                <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            // Show accept button for available tasks
-            <>
-              <TouchableOpacity
-                style={[styles.taskButton, styles.acceptButton]}
-                onPress={() => handleAcceptTask(task)}
-              >
-                <Ionicons name="hand-right" size={18} color={theme.colors.white} />
-                <Text style={styles.taskButtonText}>Accept Task</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.taskButton, styles.viewButton]}
-                onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
-              >
-                <Ionicons name="eye" size={18} color={theme.colors.primary} />
-                <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          {(() => {
+            // Check if assignedVolunteers exists and has entries
+            if (!task.assignedVolunteers || task.assignedVolunteers.length === 0) {
+              // Not assigned to anyone - show accept button
+              return (
+                <>
+                  <TouchableOpacity
+                    style={[styles.taskButton, styles.acceptButton]}
+                    onPress={() => handleAcceptTask(task)}
+                  >
+                    <Ionicons name="hand-right" size={18} color={theme.colors.white} />
+                    <Text style={styles.taskButtonText}>Accept Task</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.taskButton, styles.viewButton]}
+                    onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
+                  >
+                    <Ionicons name="eye" size={18} color={theme.colors.primary} />
+                    <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            }
+            
+            // Check if assigned to current user
+            const isAssignedToMe = task.assignedVolunteers.some(av => {
+              const volunteerId = av.volunteer?._id || av.volunteer;
+              return volunteerId === user.id || volunteerId?.toString() === user.id;
+            });
+            
+            if (isAssignedToMe) {
+              // Assigned to me - show resolve button
+              return (
+                <>
+                  <TouchableOpacity
+                    style={[styles.taskButton, styles.completeButton]}
+                    onPress={() => handleCompleteTask(task)}
+                  >
+                    <Ionicons name="checkmark-circle" size={18} color={theme.colors.white} />
+                    <Text style={styles.taskButtonText}>Mark Resolved</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.taskButton, styles.viewButton]}
+                    onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
+                  >
+                    <Ionicons name="eye" size={18} color={theme.colors.primary} />
+                    <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            } else {
+              // Assigned to someone else - show view only
+              return (
+                <TouchableOpacity
+                  style={[styles.taskButton, styles.viewButton, { flex: 1 }]}
+                  onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
+                >
+                  <Ionicons name="eye" size={18} color={theme.colors.primary} />
+                  <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View Details</Text>
+                </TouchableOpacity>
+              );
+            }
+          })()}
         </View>
       </View>
     </View>
@@ -316,15 +372,45 @@ const VolunteerDashboardScreen = ({ navigation }) => {
 
       {/* Active Tasks */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Active Tasks ({activeTasks.length})</Text>
-        {activeTasks.length > 0 ? (
-          activeTasks.map(renderTaskCard)
+        <View style={styles.taskFilterContainer}>
+          <TouchableOpacity
+            style={[styles.taskFilterButton, taskFilter === 'my' && styles.taskFilterActive]}
+            onPress={() => setTaskFilter('my')}
+          >
+            <Text style={[styles.taskFilterText, taskFilter === 'my' && styles.taskFilterTextActive]}>
+              My Tasks ({activeTasks.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.taskFilterButton, taskFilter === 'available' && styles.taskFilterActive]}
+            onPress={() => setTaskFilter('available')}
+          >
+            <Text style={[styles.taskFilterText, taskFilter === 'available' && styles.taskFilterTextActive]}>
+              Available ({availableTasks.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {taskFilter === 'my' ? (
+          activeTasks.length > 0 ? (
+            activeTasks.map(renderTaskCard)
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="checkmark-done-circle" size={48} color={theme.colors.gray300} />
+              <Text style={styles.emptyText}>No active tasks</Text>
+              <Text style={styles.emptySubtext}>Accept a task to get started!</Text>
+            </View>
+          )
         ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="checkmark-done-circle" size={48} color={theme.colors.gray300} />
-            <Text style={styles.emptyText}>No active tasks</Text>
-            <Text style={styles.emptySubtext}>You're all caught up!</Text>
-          </View>
+          availableTasks.length > 0 ? (
+            availableTasks.map(renderTaskCard)
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="checkmark-done-circle" size={48} color={theme.colors.gray300} />
+              <Text style={styles.emptyText}>No available tasks</Text>
+              <Text style={styles.emptySubtext}>All incidents are being handled!</Text>
+            </View>
+          )
         )}
       </View>
 
@@ -543,10 +629,38 @@ const styles = StyleSheet.create({
   completeButton: {
     backgroundColor: theme.colors.success,
   },
+  acceptButton: {
+    backgroundColor: theme.colors.primary,
+  },
   viewButton: {
     backgroundColor: theme.colors.white,
     borderWidth: 1,
     borderColor: theme.colors.primary,
+  },
+  taskFilterContainer: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.gray300,
+  },
+  taskFilterButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
+    alignItems: 'center',
+    backgroundColor: theme.colors.white,
+  },
+  taskFilterActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  taskFilterText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.gray600,
+  },
+  taskFilterTextActive: {
+    color: theme.colors.white,
   },
   taskButtonText: {
     fontSize: theme.typography.fontSize.sm,
