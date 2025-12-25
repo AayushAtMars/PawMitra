@@ -55,12 +55,7 @@ cloudinaryService.initialize();
 // Middleware
 app.use(helmet()); // Security headers
 app.use(cors({
-  origin: process.env.SOCKET_CORS_ORIGIN?.split(',') || [
-    'http://localhost:8081',
-    'http://localhost:8082',
-    'http://localhost:19006',
-    'http://localhost:5173'
-  ],
+  origin: true, // Allow all origins for mobile devices
   credentials: true,
   exposedHeaders: ['Authorization'],
   allowedHeaders: ['Content-Type', 'Authorization']

@@ -1,7 +1,8 @@
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const SOCKET_URL = process.env.SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = Constants.expoConfig?.extra?.socketUrl || 'http://localhost:5000';
 
 class SocketService {
   constructor() {

@@ -10,7 +10,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { incidentsAPI } from '../../services/api';
@@ -34,7 +34,7 @@ const ReportIncidentScreen = ({ navigation }) => {
   }, []);
 
   const requestPermissions = async () => {
-    const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
+    const { status: cameraStatus } = await CameraView.requestCameraPermissionsAsync();
     const { status: mediaStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     setHasPermission(cameraStatus === 'granted' && mediaStatus === 'granted');
   };
@@ -69,7 +69,7 @@ const ReportIncidentScreen = ({ navigation }) => {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images',
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
@@ -156,9 +156,9 @@ const ReportIncidentScreen = ({ navigation }) => {
   if (showCamera) {
     return (
       <View style={styles.cameraContainer}>
-        <Camera
+        <CameraView
           style={styles.camera}
-          type={Camera.Constants.Type.back}
+          facing="back"
           ref={(ref) => setCameraRef(ref)}
         >
           <View style={styles.cameraOverlay}>
@@ -175,7 +175,7 @@ const ReportIncidentScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
-        </Camera>
+        </CameraView>
       </View>
     );
   }

@@ -1,9 +1,11 @@
 {
     "expo": {
         "name": "PawMitra",
-        "slug": "pawmitra",
+        "slug": "pawmitra-mobile",
         "version": "1.0.0",
         "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "main": "./index.js",
         "userInterfaceStyle": "automatic",
         "splash": {
             "resizeMode": "contain",
@@ -33,10 +35,13 @@
                 "WRITE_EXTERNAL_STORAGE",
                 "ACCESS_FINE_LOCATION",
                 "ACCESS_COARSE_LOCATION",
-                "RECEIVE_BOOT_COMPLETED",
-                "VIBRATE",
                 "INTERNET"
-            ]
+            ],
+            "config": {
+                "googleMaps": {
+                    "apiKey": ""
+                }
+            }
         },
         "web": {
             "bundler": "metro"
@@ -56,6 +61,8 @@
             ]
         ],
         "extra": {
+            "apiUrl": "http://10.81.116.224:5000/api",
+            "socketUrl": "http://10.81.116.224:5000",
             "eas": {
                 "projectId": "your-project-id-here"
             }

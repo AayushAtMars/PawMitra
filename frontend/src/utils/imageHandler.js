@@ -46,7 +46,7 @@ class ImageHandler {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: options.allowsEditing !== false,
         aspect: options.aspect || [4, 3],
         quality: options.quality || 0.8,
@@ -78,7 +78,7 @@ class ImageHandler {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: options.allowsEditing !== false,
         aspect: options.aspect || [4, 3],
         quality: options.quality || 0.8,
