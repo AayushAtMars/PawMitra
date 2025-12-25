@@ -110,18 +110,18 @@ const HomeScreen = ({ navigation }) => {
     <TouchableOpacity
       key={incident._id}
       style={styles.incidentCard}
-      onPress={() => {/* Navigate to incident details */}}
+      onPress={() => navigation.navigate('IncidentDetails', { incidentId: incident._id })}
     >
       <View style={[styles.priorityBadge, { 
-        backgroundColor: incident.priority === 'high' 
+        backgroundColor: incident.aiAnalysis?.priority === 'high' || incident.aiAnalysis?.priority === 'critical'
           ? theme.colors.error 
-          : incident.priority === 'medium'
+          : incident.aiAnalysis?.priority === 'medium'
           ? theme.colors.warning
           : theme.colors.success
       }]}>
-        <Text style={styles.priorityText}>{incident.priority?.toUpperCase()}</Text>
+        <Text style={styles.priorityText}>{incident.aiAnalysis?.priority?.toUpperCase() || 'MEDIUM'}</Text>
       </View>
-      <Text style={styles.incidentType}>{incident.animalType || 'Animal'} in distress</Text>
+      <Text style={styles.incidentType}>{incident.aiAnalysis?.category?.replace('_', ' ') || 'Animal'} in distress</Text>
       <Text style={styles.incidentLocation} numberOfLines={1}>
         <Ionicons name="location" size={12} color={theme.colors.textSecondary} />
         {' '}{incident.address || 'Location not available'}
@@ -196,7 +196,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Incidents</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Report')}>
+            <TouchableOpacity onPress={() => navigation.navigate('AllIncidents')}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>

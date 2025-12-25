@@ -175,6 +175,10 @@ import MyPetsScreen from "../screens/adoption/MyPetsScreen";
 import MyServicesScreen from "../screens/marketplace/MyServicesScreen";
 import RegisterServiceScreen from "../screens/marketplace/RegisterServiceScreen";
 
+// --- Sub Screens (Incidents) ---
+import IncidentDetailsScreen from "../screens/incident/IncidentDetailsScreen";
+import AllIncidentsScreen from "../screens/incident/AllIncidentsScreen";
+
 // --- Sub Screens (Profile) ---
 import EditProfileScreen from "../screens/profile/EditProfileScreen";
 import HelpSupportScreen from "../screens/profile/HelpSupportScreen";

@@ -43,7 +43,7 @@ const VolunteerDashboardScreen = ({ navigation }) => {
       
       const [statsRes, tasksRes, leaderboardRes] = await Promise.all([
         volunteersAPI.getStats(),
-        incidentsAPI.getAll({ assignedTo: user.id, status: 'assigned' }),
+        incidentsAPI.getAll({ status: 'reported,volunteer_assigned', limit: 20 }),
         volunteersAPI.getLeaderboard({ limit: 10 }),
       ]);
 
@@ -118,17 +118,17 @@ const VolunteerDashboardScreen = ({ navigation }) => {
   const renderTaskCard = (task) => (
     <View key={task._id} style={styles.taskCard}>
       <View style={[styles.priorityIndicator, {
-        backgroundColor: task.priority === 'high' 
+        backgroundColor: task.aiAnalysis?.priority === 'high' || task.aiAnalysis?.priority === 'critical'
           ? theme.colors.error 
-          : task.priority === 'medium'
+          : task.aiAnalysis?.priority === 'medium'
           ? theme.colors.warning
           : theme.colors.success
       }]} />
       
       <View style={styles.taskContent}>
         <View style={styles.taskHeader}>
-          <Text style={styles.taskTitle}>{task.animalType || 'Animal'} in distress</Text>
-          <Text style={styles.taskPriority}>{task.priority?.toUpperCase()}</Text>
+          <Text style={styles.taskTitle}>{task.aiAnalysis?.category?.replace('_', ' ') || 'Animal'} in distress</Text>
+          <Text style={styles.taskPriority}>{task.aiAnalysis?.priority?.toUpperCase() || 'MEDIUM'}</Text>
         </View>
         
         <Text style={styles.taskLocation} numberOfLines={1}>
@@ -136,9 +136,9 @@ const VolunteerDashboardScreen = ({ navigation }) => {
           {' '}{task.address || 'Location not available'}
         </Text>
         
-        {task.aiAnalysis?.firstAidSteps && (
+        {task.aiAnalysis?.description && (
           <Text style={styles.taskDescription} numberOfLines={2}>
-            {task.aiAnalysis.firstAidSteps[0]}
+            {task.aiAnalysis.description}
           </Text>
         )}
         
