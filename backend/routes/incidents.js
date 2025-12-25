@@ -7,6 +7,7 @@ import {
   getIncident,
   updateIncidentStatus,
   resolveIncident,
+  acceptTask,
   assignVolunteer
 } from '../controllers/incidentController.js';
 
@@ -36,6 +37,11 @@ router.get('/:id', authenticate, getIncident);
 // @desc    Update incident status
 // @access  Private
 router.patch('/:id/status', authenticate, updateIncidentStatus);
+
+// @route   POST /api/incidents/:id/accept
+// @desc    Accept task (volunteer self-assignment)
+// @access  Private (Volunteers only)
+router.post('/:id/accept', authenticate, acceptTask);
 
 // @route   POST /api/incidents/:id/resolve
 // @desc    Resolve incident (for volunteers)

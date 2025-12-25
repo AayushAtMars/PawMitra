@@ -226,6 +226,72 @@ export const updateIncidentStatus = async (req, res) => {
   }
 };
 
+// Accept task (volunteer self-assignment)
+export const acceptTask = async (req, res) => {
+  try {
+    const incident = await Incident.findById(req.params.id);
+
+    if (!incident) {
+      return res.status(404).json({ error: 'Incident not found' });
+    }
+
+    // Check if user is a volunteer
+    if (!req.user.isVolunteer) {
+      return res.status(403).json({ error: 'Only volunteers can accept tasks' });
+    }
+
+    // Check if already assigned
+    const alreadyAssigned = incident.assignedVolunteers.some(
+      av => av.volunteer.toString() === req.user._id.toString()
+    );
+
+    if (alreadyAssigned) {
+      return res.status(400).json({ error: 'You have already accepted this task' });
+    }
+
+    // Check if incident is already resolved
+    if (incident.status === 'resolved') {
+      return res.status(400).json({ error: 'This incident has already been resolved' });
+    }
+
+    // Add volunteer to assigned list
+    incident.assignedVolunteers.push({
+      volunteer: req.user._id,
+      assignedAt: new Date(),
+      status: 'accepted'
+    });
+
+    incident.status = 'volunteer_assigned';
+    
+    await incident.addTimelineEntry(
+      'Volunteer accepted task',
+      req.user._id,
+      `${req.user.name} accepted this task`
+    );
+
+    await incident.save();
+
+    // Emit Socket.io event
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${incident.reportedBy}`).emit('volunteer_accepted', {
+        incidentId: incident._id,
+        volunteerName: req.user.name
+      });
+      io.to('admin_room').emit('incident_updated', incident);
+    }
+
+    res.json({ 
+      success: true, 
+      incident,
+      message: 'Task accepted successfully! Good luck helping the animal!' 
+    });
+  } catch (error) {
+    console.error('Accept task error:', error);
+    res.status(500).json({ error: 'Failed to accept task' });
+  }
+};
+
 // Resolve incident (for volunteers)
 export const resolveIncident = async (req, res) => {
   try {
@@ -342,7 +408,7 @@ function calculateKarmaPoints(incident) {
   return Math.round(basePoints);
 }
 
-// Assign volunteer to incident
+// Assign volunteer to incident (admin/NGO function)
 export const assignVolunteer = async (req, res) => {
   try {
     const { volunteerId } = req.body;

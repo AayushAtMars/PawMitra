@@ -28,10 +28,12 @@ const VolunteerDashboardScreen = ({ navigation }) => {
     badges: [],
   });
   const [activeTasks, setActiveTasks] = useState([]);
+  const [availableTasks, setAvailableTasks] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [taskFilter, setTaskFilter] = useState('my'); // 'my' or 'available'
 
   useEffect(() => {
     loadDashboardData();
@@ -43,12 +45,30 @@ const VolunteerDashboardScreen = ({ navigation }) => {
       
       const [statsRes, tasksRes, leaderboardRes] = await Promise.all([
         volunteersAPI.getStats(),
-        incidentsAPI.getAll({ status: 'reported,volunteer_assigned', limit: 20 }),
+        incidentsAPI.getAll({ status: 'reported,volunteer_assigned', limit: 50 }),
         volunteersAPI.getLeaderboard({ limit: 10 }),
       ]);
 
       setStats(statsRes.data || { karmaPoints: 0, tasksCompleted: 0, badges: [] });
-      setActiveTasks(tasksRes.data.incidents || []);
+      
+      const allIncidents = tasksRes.data.incidents || [];
+      
+      // Filter my tasks (where I'm assigned)
+      const myTasks = allIncidents.filter(incident => 
+        incident.assignedVolunteers?.some(
+          av => av.volunteer._id === user.id || av.volunteer === user.id
+        )
+      );
+      
+      // Filter available tasks (not assigned to me, not resolved)
+      const available = allIncidents.filter(incident => 
+        !incident.assignedVolunteers?.some(
+          av => av.volunteer._id === user.id || av.volunteer === user.id
+        ) && incident.status !== 'resolved'
+      );
+      
+      setActiveTasks(myTasks);
+      setAvailableTasks(available);
       setLeaderboard(leaderboardRes.data.volunteers || []);
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -74,14 +94,15 @@ const VolunteerDashboardScreen = ({ navigation }) => {
     }
   };
 
-  const handleAcceptTask = async (taskId) => {
+  const handleAcceptTask = async (task) => {
     try {
-      await volunteersAPI.acceptTask({ incidentId: taskId });
-      Alert.alert('Success', 'Task accepted! Good luck!');
+      const response = await incidentsAPI.acceptTask(task._id);
+      Alert.alert('Success! 🎉', 'Task accepted! Good luck helping the animal!');
       loadDashboardData();
     } catch (error) {
       console.error('Error accepting task:', error);
-      Alert.alert('Error', 'Failed to accept task');
+      const message = error.response?.data?.error || 'Failed to accept task';
+      Alert.alert('Error', message);
     }
   };
 
@@ -143,21 +164,48 @@ const VolunteerDashboardScreen = ({ navigation }) => {
         )}
         
         <View style={styles.taskActions}>
-          <TouchableOpacity
-            style={[styles.taskButton, styles.completeButton]}
-            onPress={() => handleCompleteTask(task)}
-          >
-            <Ionicons name="checkmark-circle" size={18} color={theme.colors.white} />
-            <Text style={styles.taskButtonText}>Mark Resolved</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.taskButton, styles.viewButton]}
-            onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
-          >
-            <Ionicons name="eye" size={18} color={theme.colors.primary} />
-            <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
-          </TouchableOpacity>
+          {/* Check if this task is assigned to current user */}
+          {task.assignedVolunteers?.some(av => 
+            av.volunteer._id === user.id || av.volunteer === user.id
+          ) ? (
+            // Show resolve button for my tasks
+            <>
+              <TouchableOpacity
+                style={[styles.taskButton, styles.completeButton]}
+                onPress={() => handleCompleteTask(task)}
+              >
+                <Ionicons name="checkmark-circle" size={18} color={theme.colors.white} />
+                <Text style={styles.taskButtonText}>Mark Resolved</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.taskButton, styles.viewButton]}
+                onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
+              >
+                <Ionicons name="eye" size={18} color={theme.colors.primary} />
+                <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            // Show accept button for available tasks
+            <>
+              <TouchableOpacity
+                style={[styles.taskButton, styles.acceptButton]}
+                onPress={() => handleAcceptTask(task)}
+              >
+                <Ionicons name="hand-right" size={18} color={theme.colors.white} />
+                <Text style={styles.taskButtonText}>Accept Task</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.taskButton, styles.viewButton]}
+                onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
+              >
+                <Ionicons name="eye" size={18} color={theme.colors.primary} />
+                <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>

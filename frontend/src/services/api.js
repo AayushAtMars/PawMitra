@@ -71,6 +71,7 @@ export const incidentsAPI = {
   getById: (id) => api.get(`/incidents/${id}`),
   updateStatus: (id, data) => api.patch(`/incidents/${id}/status`, data),
   resolveIncident: (id, data) => api.post(`/incidents/${id}/resolve`, data),
+  acceptTask: (id) => api.post(`/incidents/${id}/accept`),
   assignVolunteer: (id, data) => api.post(`/incidents/${id}/assign`, data),
 };
 
