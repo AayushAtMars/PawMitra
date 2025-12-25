@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +25,9 @@ const ReportIncidentScreen = ({ navigation }) => {
   const [photo, setPhoto] = useState(null);
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState('');
+  const [manualAddress, setManualAddress] = useState('');
+  const [useManualLocation, setUseManualLocation] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState(null);
@@ -123,12 +128,14 @@ const ReportIncidentScreen = ({ navigation }) => {
     setAiResult(null);
 
     try {
+      const finalAddress = useManualLocation ? manualAddress : address;
+      
       const response = await incidentsAPI.create({
         location: {
           type: 'Point',
           coordinates: location.coordinates,
         },
-        address: address || 'Location not available',
+        address: finalAddress || 'Location not available',
         imageBase64: `data:image/jpeg;base64,${photo.base64}`,
         description: 'Reported via mobile app',
       });
@@ -205,9 +212,19 @@ const ReportIncidentScreen = ({ navigation }) => {
         <View style={styles.locationCard}>
           <Ionicons name="location" size={24} color={theme.colors.primary} />
           <View style={styles.locationInfo}>
-            <Text style={styles.locationTitle}>Current Location</Text>
-            <Text style={styles.locationAddress}>{address || 'Getting address...'}</Text>
+            <Text style={styles.locationTitle}>
+              {useManualLocation ? 'Manual Location' : 'Current Location'}
+            </Text>
+            <Text style={styles.locationAddress}>
+              {useManualLocation ? manualAddress : (address || 'Getting address...')}
+            </Text>
           </View>
+          <TouchableOpacity 
+            style={styles.editLocationButton}
+            onPress={() => setShowLocationModal(true)}
+          >
+            <Ionicons name="pencil" size={20} color={theme.colors.primary} />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -309,6 +326,75 @@ const ReportIncidentScreen = ({ navigation }) => {
         <Text style={styles.instructionItem}>3. Follow first aid instructions if safe</Text>
         <Text style={styles.instructionItem}>4. Nearby volunteers will be alerted</Text>
       </View>
+
+      {/* Location Modal */}
+      <Modal
+        visible={showLocationModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowLocationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Location</Text>
+            
+            <View style={styles.locationToggle}>
+              <TouchableOpacity
+                style={[styles.toggleButton, !useManualLocation && styles.toggleButtonActive]}
+                onPress={() => setUseManualLocation(false)}
+              >
+                <Text style={[styles.toggleText, !useManualLocation && styles.toggleTextActive]}>
+                  Auto Location
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleButton, useManualLocation && styles.toggleButtonActive]}
+                onPress={() => setUseManualLocation(true)}
+              >
+                <Text style={[styles.toggleText, useManualLocation && styles.toggleTextActive]}>
+                  Manual
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {useManualLocation && (
+              <TextInput
+                style={styles.addressInput}
+                placeholder="Enter address manually"
+                value={manualAddress}
+                onChangeText={setManualAddress}
+                multiline
+                numberOfLines={3}
+              />
+            )}
+
+            {!useManualLocation && (
+              <Text style={styles.autoLocationText}>{address || 'Getting address...'}</Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowLocationModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={() => {
+                  if (useManualLocation && !manualAddress.trim()) {
+                    Alert.alert('Error', 'Please enter an address');
+                    return;
+                  }
+                  setShowLocationModal(false);
+                }}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -576,6 +662,92 @@ const styles = StyleSheet.create({
   buttonText: {
     color: theme.colors.white,
     fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+  },
+  editLocationButton: {
+    padding: theme.spacing.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    width: '85%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.lg,
+  },
+  locationToggle: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.gray300,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    backgroundColor: theme.colors.white,
+  },
+  toggleButtonActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  toggleText: {
+    color: theme.colors.gray600,
+    fontWeight: theme.typography.fontWeight.medium,
+  },
+  toggleTextActive: {
+    color: theme.colors.white,
+  },
+  addressInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.gray300,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  autoLocationText: {
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.gray100,
+    borderRadius: theme.borderRadius.md,
+    color: theme.colors.gray600,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: theme.colors.gray200,
+  },
+  saveButton: {
+    backgroundColor: theme.colors.primary,
+  },
+  cancelButtonText: {
+    color: theme.colors.gray700,
+    fontWeight: theme.typography.fontWeight.semibold,
+  },
+  saveButtonText: {
+    color: theme.colors.white,
     fontWeight: theme.typography.fontWeight.semibold,
   },
 });
