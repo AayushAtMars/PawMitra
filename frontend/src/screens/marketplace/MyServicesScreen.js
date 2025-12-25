@@ -28,7 +28,7 @@ const MyServicesScreen = ({ navigation }) => {
   const fetchMyServices = async () => {
     try {
       setLoading(true);
-      const response = await marketplaceAPI.getServices({ owner: user.id });
+      const response = await marketplaceAPI.getMyServices();
       setServices(response.data.services || []);
     } catch (error) {
       console.error('Error fetching services:', error);

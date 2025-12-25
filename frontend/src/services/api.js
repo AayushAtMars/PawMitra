@@ -70,6 +70,7 @@ export const incidentsAPI = {
   getNearby: (params) => api.get("/incidents/nearby", { params }),
   getById: (id) => api.get(`/incidents/${id}`),
   updateStatus: (id, data) => api.patch(`/incidents/${id}/status`, data),
+  resolveIncident: (id, data) => api.post(`/incidents/${id}/resolve`, data),
   assignVolunteer: (id, data) => api.post(`/incidents/${id}/assign`, data),
 };
 
@@ -95,6 +96,7 @@ export const petsAPI = {
 export const marketplaceAPI = {
   registerService: (data) => api.post("/marketplace/services", data),
   getServices: (params) => api.get("/marketplace/services", { params }),
+  getMyServices: () => api.get("/marketplace/my"),
   getNearbyServices: (params) => api.get("/marketplace/services/nearby", { params }),
   getServiceById: (id) => api.get(`/marketplace/services/${id}`),
   addReview: (id, data) => api.post(`/marketplace/services/${id}/review`, data),
