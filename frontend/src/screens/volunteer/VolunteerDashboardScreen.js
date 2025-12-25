@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +29,9 @@ const VolunteerDashboardScreen = ({ navigation }) => {
   });
   const [activeTasks, setActiveTasks] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [resolutionNotes, setResolutionNotes] = useState('');
 
   useEffect(() => {
     loadDashboardData();
@@ -80,27 +85,34 @@ const VolunteerDashboardScreen = ({ navigation }) => {
     }
   };
 
-  const handleCompleteTask = async (taskId) => {
-    Alert.alert(
-      'Complete Task',
-      'Have you completed this task?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Complete',
-          onPress: async () => {
-            try {
-              await volunteersAPI.completeTask({ incidentId: taskId });
-              Alert.alert('Success', 'Task completed! Karma points earned! 🎉');
-              loadDashboardData();
-            } catch (error) {
-              console.error('Error completing task:', error);
-              Alert.alert('Error', 'Failed to complete task');
-            }
-          }
-        }
-      ]
-    );
+  const handleCompleteTask = (task) => {
+    setSelectedTask(task);
+    setResolutionNotes('');
+    setShowResolveModal(true);
+  };
+
+  const submitResolution = async () => {
+    if (!resolutionNotes.trim()) {
+      Alert.alert('Error', 'Please enter resolution notes');
+      return;
+    }
+
+    try {
+      const response = await incidentsAPI.resolveIncident(selectedTask._id, {
+        resolutionNotes: resolutionNotes.trim(),
+        photos: []
+      });
+      
+      setShowResolveModal(false);
+      Alert.alert(
+        'Success! 🎉',
+        `Incident resolved!\n+${response.data.karmaEarned} karma points earned!`,
+        [{ text: 'Awesome!', onPress: loadDashboardData }]
+      );
+    } catch (error) {
+      console.error('Error resolving incident:', error);
+      Alert.alert('Error', 'Failed to resolve incident');
+    }
   };
 
   const renderTaskCard = (task) => (
@@ -133,10 +145,10 @@ const VolunteerDashboardScreen = ({ navigation }) => {
         <View style={styles.taskActions}>
           <TouchableOpacity
             style={[styles.taskButton, styles.completeButton]}
-            onPress={() => handleCompleteTask(task._id)}
+            onPress={() => handleCompleteTask(task)}
           >
             <Ionicons name="checkmark-circle" size={18} color={theme.colors.white} />
-            <Text style={styles.taskButtonText}>Complete</Text>
+            <Text style={styles.taskButtonText}>Mark Resolved</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -285,6 +297,46 @@ const VolunteerDashboardScreen = ({ navigation }) => {
           {leaderboard.map(renderLeaderboardItem)}
         </View>
       </View>
+
+      {/* Resolution Modal */}
+      <Modal
+        visible={showResolveModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowResolveModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Mark as Resolved</Text>
+            
+            <Text style={styles.modalLabel}>Resolution Notes *</Text>
+            <TextInput
+              style={styles.resolutionInput}
+              placeholder="Describe what you did to help the animal..."
+              value={resolutionNotes}
+              onChangeText={setResolutionNotes}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowResolveModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.submitButton]}
+                onPress={submitResolution}
+              >
+                <Text style={styles.submitButtonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -528,6 +580,65 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    width: '85%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.lg,
+  },
+  modalLabel: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+  },
+  resolutionInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.gray300,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: theme.spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: theme.colors.gray200,
+  },
+  submitButton: {
+    backgroundColor: theme.colors.success,
+  },
+  cancelButtonText: {
+    color: theme.colors.gray700,
+    fontWeight: theme.typography.fontWeight.semibold,
+  },
+  submitButtonText: {
+    color: theme.colors.white,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
 });
 
