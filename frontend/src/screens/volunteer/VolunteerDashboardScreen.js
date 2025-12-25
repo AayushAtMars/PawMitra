@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { volunteersAPI, incidentsAPI } from '../../services/api';
+import { volunteersAPI, incidentsAPI, authAPI } from '../../services/api';
 import theme from '../../theme';
 
 const VolunteerDashboardScreen = ({ navigation }) => {
@@ -43,13 +43,31 @@ const VolunteerDashboardScreen = ({ navigation }) => {
     try {
       setLoading(true);
       
-      const [statsRes, tasksRes, leaderboardRes] = await Promise.all([
-        volunteersAPI.getStats(),
+      const [userProfileRes, tasksRes, leaderboardRes] = await Promise.all([
+        authAPI.getProfile(), // Get current user's profile with volunteer data
         incidentsAPI.getAll({ limit: 50 }), // Fetch all incidents like Home screen
         volunteersAPI.getLeaderboard({ limit: 10 }),
       ]);
 
-      setStats(statsRes.data || { karmaPoints: 0, tasksCompleted: 0, badges: [] });
+      // Extract volunteer data from user profile
+      const volunteerData = userProfileRes.data.user.volunteerData || {};
+      const karmaPoints = volunteerData.karmaPoints || 0;
+      const tasksCompleted = volunteerData.tasksCompleted || 0;
+      
+      // Calculate badges based on karma points
+      const badges = [];
+      if (karmaPoints >= 10) badges.push({ name: 'Beginner Helper', icon: '🌱' });
+      if (karmaPoints >= 50) badges.push({ name: 'Active Volunteer', icon: '⭐' });
+      if (karmaPoints >= 100) badges.push({ name: 'Hero', icon: '🦸' });
+      if (karmaPoints >= 250) badges.push({ name: 'Legend', icon: '👑' });
+      if (tasksCompleted >= 5) badges.push({ name: 'Dedicated', icon: '💪' });
+      if (tasksCompleted >= 20) badges.push({ name: 'Champion', icon: '🏆' });
+      
+      setStats({
+        karmaPoints,
+        tasksCompleted,
+        badges
+      });
       
       const allIncidents = tasksRes.data.incidents || [];
       
@@ -369,6 +387,21 @@ const VolunteerDashboardScreen = ({ navigation }) => {
           <Text style={styles.statLabel}>Badges</Text>
         </View>
       </View>
+
+      {/* Badges Section */}
+      {stats.badges && stats.badges.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🏆 Your Badges</Text>
+          <View style={styles.badgesContainer}>
+            {stats.badges.map((badge, index) => (
+              <View key={index} style={styles.badgeItem}>
+                <Text style={styles.badgeIcon}>{badge.icon}</Text>
+                <Text style={styles.badgeName}>{badge.name}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* Active Tasks */}
       <View style={styles.section}>
@@ -801,6 +834,30 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: theme.colors.white,
     fontWeight: theme.typography.fontWeight.semibold,
+  },
+  badgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  badgeItem: {
+    backgroundColor: theme.colors.white,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    alignItems: 'center',
+    minWidth: 100,
+    ...theme.shadows.sm,
+  },
+  badgeIcon: {
+    fontSize: 32,
+    marginBottom: theme.spacing.xs,
+  },
+  badgeName: {
+    fontSize: theme.typography.fontSize.xs,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
   },
 });
 
