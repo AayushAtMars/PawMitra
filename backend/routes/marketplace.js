@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth.js';
 import {
   registerService,
   getServices,
+  getMyServices,
   getNearbyServices,
   getService,
   addReview,
@@ -15,6 +16,11 @@ const router = express.Router();
 // @desc    Register service provider
 // @access  Private
 router.post('/services', authenticate, registerService);
+
+// @route   GET /api/marketplace/my
+// @desc    Get my services (logged-in user's services)
+// @access  Private
+router.get('/my', authenticate, getMyServices);
 
 // @route   GET /api/marketplace/services
 // @desc    Get all services with filters
