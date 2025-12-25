@@ -153,7 +153,7 @@ const VolunteerDashboardScreen = ({ navigation }) => {
           
           <TouchableOpacity
             style={[styles.taskButton, styles.viewButton]}
-            onPress={() => {/* Navigate to task details */}}
+            onPress={() => navigation.navigate('IncidentDetails', { incidentId: task._id })}
           >
             <Ionicons name="eye" size={18} color={theme.colors.primary} />
             <Text style={[styles.taskButtonText, { color: theme.colors.primary }]}>View</Text>

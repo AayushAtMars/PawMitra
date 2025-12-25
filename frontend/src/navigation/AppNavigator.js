@@ -290,6 +290,10 @@ const AppNavigator = () => {
             />
             <Stack.Screen name="MyServices" component={MyServicesScreen} />
 
+            {/* Incident Flow */}
+            <Stack.Screen name="IncidentDetails" component={IncidentDetailsScreen} />
+            <Stack.Screen name="AllIncidents" component={AllIncidentsScreen} />
+
             {/* Profile Flow */}
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="MyReports" component={MyReportsScreen} />
