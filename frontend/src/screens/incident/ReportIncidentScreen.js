@@ -18,7 +18,7 @@ import { getCurrentLocation, reverseGeocode } from '../../utils/geolocation';
 import theme from '../../theme';
 
 const ReportIncidentScreen = ({ navigation }) => {
-  const [hasPermission, setHasPermission] = useState(null);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [cameraRef, setCameraRef] = useState(null);
   const [photo, setPhoto] = useState(null);
   const [location, setLocation] = useState(null);
@@ -29,14 +29,18 @@ const ReportIncidentScreen = ({ navigation }) => {
   const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
-    requestPermissions();
     getLocation();
   }, []);
 
   const requestPermissions = async () => {
-    const { status: cameraStatus } = await CameraView.requestCameraPermissionsAsync();
-    const { status: mediaStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    setHasPermission(cameraStatus === 'granted' && mediaStatus === 'granted');
+    try {
+      const cameraResult = await requestCameraPermission();
+      const { status: mediaStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      return cameraResult.granted && mediaStatus === 'granted';
+    } catch (error) {
+      console.error('Permission request error:', error);
+      return false;
+    }
   };
 
   const getLocation = async () => {
@@ -63,11 +67,39 @@ const ReportIncidentScreen = ({ navigation }) => {
       });
       setPhoto(photo);
       setShowCamera(false);
-      // Don't auto-submit, let user review first
+    }
+  };
+
+  const openCamera = async () => {
+    const granted = await requestPermissions();
+    if (granted) {
+      setShowCamera(true);
+    } else {
+      Alert.alert(
+        'Permission Required',
+        'Camera and media library permissions are required to take photos.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Grant Permission', onPress: requestPermissions }
+        ]
+      );
     }
   };
 
   const pickImage = async () => {
+    const granted = await requestPermissions();
+    if (!granted) {
+      Alert.alert(
+        'Permission Required',
+        'Media library permission is required to choose photos.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Grant Permission', onPress: requestPermissions }
+        ]
+      );
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images',
       allowsEditing: true,
@@ -78,7 +110,6 @@ const ReportIncidentScreen = ({ navigation }) => {
 
     if (!result.canceled) {
       setPhoto(result.assets[0]);
-      // Don't auto-submit, let user review first
     }
   };
 
@@ -130,28 +161,8 @@ const ReportIncidentScreen = ({ navigation }) => {
   const retake = () => {
     setPhoto(null);
     setAiResult(null);
-    setShowCamera(true);
+    openCamera();
   };
-
-  if (hasPermission === null) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <View style={styles.container}>
-        <Ionicons name="camera-off" size={64} color={theme.colors.gray400} />
-        <Text style={styles.permissionText}>Camera permission is required</Text>
-        <TouchableOpacity style={styles.button} onPress={requestPermissions}>
-          <Text style={styles.buttonText}>Grant Permission</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   if (showCamera) {
     return (
@@ -277,7 +288,7 @@ const ReportIncidentScreen = ({ navigation }) => {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => setShowCamera(true)}
+            onPress={openCamera}
           >
             <Ionicons name="camera" size={32} color={theme.colors.primary} />
             <Text style={styles.actionButtonText}>Take Photo</Text>

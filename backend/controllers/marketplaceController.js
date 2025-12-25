@@ -105,6 +105,22 @@ export const getServices = async (req, res) => {
   }
 };
 
+// Get my services (services owned by logged-in user)
+export const getMyServices = async (req, res) => {
+  try {
+    const services = await Marketplace.find({ owner: req.user._id })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      services
+    });
+  } catch (error) {
+    console.error('Get my services error:', error);
+    res.status(500).json({ error: 'Failed to fetch your services' });
+  }
+};
+
 // Get nearby services
 export const getNearbyServices = async (req, res) => {
   try {

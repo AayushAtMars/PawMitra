@@ -226,6 +226,122 @@ export const updateIncidentStatus = async (req, res) => {
   }
 };
 
+// Resolve incident (for volunteers)
+export const resolveIncident = async (req, res) => {
+  try {
+    const { resolutionNotes, photos } = req.body;
+    const incident = await Incident.findById(req.params.id);
+
+    if (!incident) {
+      return res.status(404).json({ error: 'Incident not found' });
+    }
+
+    // Check if user is assigned volunteer
+    const isAssigned = incident.assignedVolunteers.some(
+      av => av.volunteer.toString() === req.user._id.toString()
+    );
+
+    if (!isAssigned && !req.user.isVolunteer) {
+      return res.status(403).json({ error: 'Not authorized to resolve this incident' });
+    }
+
+    // Upload resolution photos if provided
+    let uploadedPhotos = [];
+    if (photos && photos.length > 0) {
+      for (const photo of photos) {
+        const uploaded = await cloudinaryService.uploadBase64Image(
+          photo,
+          'pawmitra/resolutions'
+        );
+        uploadedPhotos.push({
+          url: uploaded.url,
+          publicId: uploaded.publicId
+        });
+      }
+    }
+
+    // Update incident
+    incident.status = 'resolved';
+    incident.resolvedAt = new Date();
+    incident.resolutionNotes = resolutionNotes;
+    incident.resolutionPhotos = uploadedPhotos;
+
+    // Update volunteer assignment status
+    const volunteerAssignment = incident.assignedVolunteers.find(
+      av => av.volunteer.toString() === req.user._id.toString()
+    );
+    if (volunteerAssignment) {
+      volunteerAssignment.status = 'completed';
+      volunteerAssignment.completedAt = new Date();
+    }
+
+    await incident.addTimelineEntry(
+      'Incident resolved',
+      req.user._id,
+      resolutionNotes
+    );
+
+    await incident.save();
+
+    // Award karma points to volunteer
+    const karmaPoints = calculateKarmaPoints(incident);
+    const volunteer = await User.findById(req.user._id);
+    
+    if (volunteer && volunteer.isVolunteer) {
+      volunteer.volunteerData.karmaPoints += karmaPoints;
+      volunteer.volunteerData.tasksCompleted += 1;
+      await volunteer.save();
+    }
+
+    // Emit Socket.io event
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin_room').emit('incident_resolved', incident);
+      io.to(`user_${incident.reportedBy}`).emit('incident_resolved', {
+        incidentId: incident._id,
+        message: 'Your reported incident has been resolved'
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      incident,
+      karmaEarned: karmaPoints,
+      message: `Incident resolved! You earned ${karmaPoints} karma points.`
+    });
+  } catch (error) {
+    console.error('Resolve incident error:', error);
+    res.status(500).json({ error: 'Failed to resolve incident' });
+  }
+};
+
+// Calculate karma points based on incident priority and response time
+function calculateKarmaPoints(incident) {
+  let basePoints = 10;
+  
+  // Priority multiplier
+  const priorityMultiplier = {
+    'critical': 3,
+    'high': 2,
+    'medium': 1.5,
+    'low': 1
+  };
+  
+  const priority = incident.aiAnalysis?.priority || 'medium';
+  basePoints *= priorityMultiplier[priority] || 1;
+  
+  // Response time bonus (if resolved within 24 hours)
+  const reportedTime = new Date(incident.createdAt);
+  const resolvedTime = new Date();
+  const hoursDiff = (resolvedTime - reportedTime) / (1000 * 60 * 60);
+  
+  if (hoursDiff <= 24) {
+    basePoints += 5; // Quick response bonus
+  }
+  
+  return Math.round(basePoints);
+}
+
 // Assign volunteer to incident
 export const assignVolunteer = async (req, res) => {
   try {
