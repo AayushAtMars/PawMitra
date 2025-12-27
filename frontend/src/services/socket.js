@@ -1,8 +1,10 @@
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
+// import Constants from 'expo-constants';
 
-const SOCKET_URL = Constants.expoConfig?.extra?.socketUrl || 'http://localhost:5000';
+// const SOCKET_URL = Constants.expoConfig?.extra?.socketUrl || 'http://localhost:5000';
+import { SOCKET_URL } from "../config/api";
+
 
 class SocketService {
   constructor() {
@@ -18,7 +20,7 @@ class SocketService {
         auth: {
           token: token || ''
         },
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5
