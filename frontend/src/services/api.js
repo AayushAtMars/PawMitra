@@ -1,10 +1,14 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
+// import Constants from 'expo-constants';
 
 // Get API URL from app.json extra config
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:5000/api';
-const SOCKET_URL = Constants.expoConfig?.extra?.socketUrl || 'http://localhost:5000';
+// const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:5000/api';
+// const SOCKET_URL = Constants.expoConfig?.extra?.socketUrl || 'http://localhost:5000';
+
+
+import { API_URL, SOCKET_URL } from "../config/api";
+
 
 // Create axios instance
 const api = axios.create({
