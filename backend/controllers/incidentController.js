@@ -53,10 +53,12 @@ export const createIncident = async (req, res) => {
     // Emit Socket.io event for real-time alerts
     const io = req.app.get('io');
     if (io) {
-      // Find nearby volunteers (within 2km)
-      const nearbyVolunteers = await User.find({
-        isVolunteer: true,
-        'volunteerData.availability': true,
+      // Find nearby volunteers and NGOs (within 2km)
+      const nearbyUsers = await User.find({
+        $or: [
+          { isVolunteer: true, 'volunteerData.availability': true },
+          { role: 'ngo' }
+        ],
         location: {
           $near: {
             $geometry: {
@@ -66,11 +68,11 @@ export const createIncident = async (req, res) => {
             $maxDistance: 2000 // 2km in meters
           }
         }
-      }).select('_id');
+      }).select('_id role');
 
-      // Emit to nearby volunteers
-      nearbyVolunteers.forEach(volunteer => {
-        io.to(`user_${volunteer._id}`).emit('new_incident_alert', {
+      // Emit to nearby volunteers and NGOs
+      nearbyUsers.forEach(user => {
+        io.to(`user_${user._id}`).emit('new_incident_alert', {
           incident: {
             id: incident._id,
             location: incident.location,
@@ -78,7 +80,8 @@ export const createIncident = async (req, res) => {
             priority: incident.aiAnalysis.priority,
             category: incident.aiAnalysis.category,
             photo: incident.photos[0]?.url,
-            reportedAt: incident.createdAt
+            reportedAt: incident.createdAt,
+            type: user.role === 'ngo' ? 'ngo_alert' : 'volunteer_alert'
           }
         });
       });

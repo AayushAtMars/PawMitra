@@ -25,7 +25,7 @@ import incidentRoutes from './routes/incidents.js';
 import volunteerRoutes from './routes/volunteers.js';
 import petRoutes from './routes/pets.js';
 import marketplaceRoutes from './routes/marketplace.js';
-
+import userRoutes from "./routes/userRoutes.js";
 // Load environment variables
 dotenv.config();
 console.log('JWT_SECRET loaded:', process.env.JWT_SECRET ? 'YES' : 'NO');
@@ -81,7 +81,7 @@ app.use('/api/incidents', incidentRoutes);
 app.use('/api/volunteers', volunteerRoutes);
 app.use('/api/pets', petRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
-
+app.use("/api/user", userRoutes);
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({

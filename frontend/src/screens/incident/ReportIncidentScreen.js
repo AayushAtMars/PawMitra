@@ -159,7 +159,8 @@ const ReportIncidentScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error reporting incident:', error);
-      Alert.alert('Error', 'Failed to report incident. Please try again.');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to report incident. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setAnalyzing(false);
     }

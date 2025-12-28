@@ -46,6 +46,11 @@ const RecentIncidents = ({ incidents = [] }) => {
               <p className="text-sm text-gray-600 mt-1">
                 📍 {incident.address || 'Location not available'}
               </p>
+              {incident.assignedNGO && (
+                <p className="text-sm text-blue-600 mt-1">
+                  🏢 NGO: {incident.assignedNGO.name}
+                </p>
+              )}
             </div>
             <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getPriorityColor(incident.priority)}`}>
               {incident.priority?.toUpperCase()}

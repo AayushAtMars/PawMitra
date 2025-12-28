@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { incidentsAPI, petsAPI, volunteersAPI } from '../services/api';
+import { initSocket, disconnectSocket } from '../services/socket';
 import StatsCard from '../components/StatsCard';
 import MapView from '../components/MapView';
 import RecentIncidents from '../components/RecentIncidents';
 import Analytics from '../components/Analytics';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalIncidents: 0,
     activeIncidents: 0,
@@ -19,6 +22,35 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Initialize Socket Connection
+    const socket = initSocket();
+    
+    // Listen for new incidents
+    socket.on('new_incident', (incident) => {
+      console.log('New incident received:', incident);
+      setIncidents((prev) => [incident, ...prev]);
+      setStats((prev) => ({
+        ...prev,
+        totalIncidents: prev.totalIncidents + 1,
+        activeIncidents: prev.activeIncidents + 1,
+      }));
+    });
+
+    // Listen for incident updates
+    socket.on('incident_updated', (updatedIncident) => {
+      console.log('Incident updated:', updatedIncident);
+      setIncidents((prev) =>
+        prev.map((inc) => (inc._id === updatedIncident._id ? updatedIncident : inc))
+      );
+      // Ideally re-fetch stats to be accurate, or calculate diff
+    });
+
+    return () => {
+      socket.off('new_incident');
+      socket.off('incident_updated');
+      disconnectSocket();
+    };
   }, []);
 
   const loadDashboardData = async () => {
@@ -69,7 +101,8 @@ const AdminDashboard = () => {
             <button
               onClick={() => {
                 localStorage.removeItem('adminToken');
-                window.location.href = '/login';
+                localStorage.removeItem('adminUser');
+                navigate('/login');
               }}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
             >
