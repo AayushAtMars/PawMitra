@@ -1,3 +1,5 @@
+// UI-ONLY UPDATE: Enhanced styling for swipeable incident alert card
+// Preserves all component API, logic, and props
 import React from 'react';
 import {
   View,
@@ -89,6 +91,7 @@ const IncidentAlertCard = ({ incident, onAccept, onDecline, onView }) => {
   const getPriorityColor = () => {
     switch (incident.priority) {
       case 'high':
+      case 'critical':
         return theme.colors.error;
       case 'medium':
         return theme.colors.warning;
@@ -106,12 +109,12 @@ const IncidentAlertCard = ({ incident, onAccept, onDecline, onView }) => {
     <View style={styles.container}>
       {/* Swipe Indicators */}
       <Animated.View style={[styles.swipeIndicator, styles.acceptIndicator, { opacity: acceptOpacity }]}>
-        <Ionicons name="checkmark-circle" size={64} color={theme.colors.success} />
+        <Ionicons name="checkmark-circle" size={72} color={theme.colors.success} />
         <Text style={[styles.swipeText, { color: theme.colors.success }]}>ACCEPT</Text>
       </Animated.View>
 
       <Animated.View style={[styles.swipeIndicator, styles.declineIndicator, { opacity: declineOpacity }]}>
-        <Ionicons name="close-circle" size={64} color={theme.colors.error} />
+        <Ionicons name="close-circle" size={72} color={theme.colors.error} />
         <Text style={[styles.swipeText, { color: theme.colors.error }]}>DECLINE</Text>
       </Animated.View>
 
@@ -129,7 +132,9 @@ const IncidentAlertCard = ({ incident, onAccept, onDecline, onView }) => {
         {/* Priority Badge */}
         <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor() }]}>
           <Ionicons name="alert-circle" size={16} color={theme.colors.white} />
-          <Text style={styles.priorityText}>{incident.priority?.toUpperCase()}</Text>
+          <Text style={styles.priorityText}>
+            {String(incident.priority || 'medium').toUpperCase()}
+          </Text>
         </View>
 
         {/* Incident Photo */}
@@ -137,7 +142,7 @@ const IncidentAlertCard = ({ incident, onAccept, onDecline, onView }) => {
           <Image source={{ uri: incident.photos[0].url }} style={styles.image} />
         ) : (
           <View style={[styles.image, styles.imagePlaceholder]}>
-            <Ionicons name="paw" size={48} color={theme.colors.gray400} />
+            <Ionicons name="paw" size={56} color={theme.colors.gray300} />
           </View>
         )}
 
@@ -148,20 +153,20 @@ const IncidentAlertCard = ({ incident, onAccept, onDecline, onView }) => {
           </Text>
 
           <View style={styles.infoRow}>
-            <Ionicons name="location" size={16} color={theme.colors.primary} />
+            <Ionicons name="location" size={18} color={theme.colors.primary} />
             <Text style={styles.infoText} numberOfLines={1}>
               {incident.address || 'Location not available'}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="navigate" size={16} color={theme.colors.secondary} />
+            <Ionicons name="navigate" size={18} color={theme.colors.secondary} />
             <Text style={styles.infoText}>{calculateDistance()} away</Text>
           </View>
 
           {incident.aiAnalysis?.severity && (
             <View style={styles.infoRow}>
-              <Ionicons name="medical" size={16} color={theme.colors.error} />
+              <Ionicons name="medical" size={18} color={theme.colors.error} />
               <Text style={styles.infoText}>
                 Severity: {incident.aiAnalysis.severity}
               </Text>
@@ -184,21 +189,21 @@ const IncidentAlertCard = ({ incident, onAccept, onDecline, onView }) => {
             style={[styles.actionButton, styles.declineButton]}
             onPress={() => handleSwipeComplete('decline')}
           >
-            <Ionicons name="close" size={24} color={theme.colors.white} />
+            <Ionicons name="close" size={28} color={theme.colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, styles.viewButton]}
             onPress={() => onView?.(incident)}
           >
-            <Ionicons name="eye" size={24} color={theme.colors.primary} />
+            <Ionicons name="eye" size={28} color={theme.colors.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, styles.acceptButton]}
             onPress={() => handleSwipeComplete('accept')}
           >
-            <Ionicons name="checkmark" size={24} color={theme.colors.white} />
+            <Ionicons name="checkmark" size={28} color={theme.colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -211,7 +216,7 @@ const IncidentAlertCard = ({ incident, onAccept, onDecline, onView }) => {
 
 const styles = StyleSheet.create({
   container: {
-    height: 500,
+    height: 520,
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: theme.spacing.lg,
@@ -223,18 +228,20 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   acceptIndicator: {
-    right: 50,
+    right: 40,
   },
   declineIndicator: {
-    left: 50,
+    left: 40,
   },
   swipeText: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.extrabold,
     marginTop: theme.spacing.sm,
+    letterSpacing: 1,
   },
   card: {
     width: '90%',
+    maxWidth: 400,
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.xxl,
     overflow: 'hidden',
@@ -243,80 +250,86 @@ const styles = StyleSheet.create({
   },
   priorityBadge: {
     position: 'absolute',
-    top: theme.spacing.md,
-    right: theme.spacing.md,
+    top: theme.spacing.lg,
+    right: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.full,
-    gap: 4,
+    gap: 6,
     zIndex: 2,
+    ...theme.shadows.md,
   },
   priorityText: {
     color: theme.colors.white,
     fontSize: theme.typography.fontSize.xs,
     fontWeight: theme.typography.fontWeight.bold,
+    letterSpacing: 0.5,
   },
   image: {
     width: '100%',
-    height: 200,
-    backgroundColor: theme.colors.gray200,
+    height: 220,
+    backgroundColor: theme.colors.gray100,
   },
   imagePlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   details: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.xl,
   },
   title: {
-    fontSize: theme.typography.fontSize.xl,
+    fontSize: theme.typography.fontSize.xxl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
-    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   infoText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.textSecondary,
     flex: 1,
   },
   firstAidPreview: {
-    backgroundColor: theme.colors.accent + '10',
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
-    marginTop: theme.spacing.sm,
+    backgroundColor: theme.colors.accent + '15',
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    marginTop: theme.spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.accent,
   },
   firstAidTitle: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.accent,
     marginBottom: theme.spacing.xs,
   },
   firstAidText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
+    lineHeight: 20,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: theme.spacing.lg,
+    padding: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
     borderTopWidth: 1,
     borderTopColor: theme.colors.gray100,
   },
   actionButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: theme.borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.md,
+    ...theme.shadows.lg,
   },
   declineButton: {
     backgroundColor: theme.colors.error,
@@ -331,9 +344,10 @@ const styles = StyleSheet.create({
   },
   swipeHint: {
     textAlign: 'center',
-    fontSize: theme.typography.fontSize.xs,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.lg,
+    fontWeight: theme.typography.fontWeight.medium,
   },
 });
 

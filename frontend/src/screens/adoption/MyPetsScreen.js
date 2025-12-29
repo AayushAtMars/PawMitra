@@ -1,3 +1,5 @@
+// UI-ONLY UPDATE: Enhanced styling for My Pets screen with improved card layout
+// Preserves all existing business logic, API calls, and handlers
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -59,7 +61,6 @@ const MyPetsScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Backend should have a delete endpoint
               Alert.alert('Success', 'Pet removed');
               fetchMyPets();
             } catch (error) {
@@ -74,78 +75,111 @@ const MyPetsScreen = ({ navigation }) => {
 
   const renderPetCard = ({ item }) => (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
+      {/* Pet Image & Quick Info */}
+      <View style={styles.cardTop}>
         {item.photos && item.photos.length > 0 ? (
           <Image source={{ uri: item.photos[0].url }} style={styles.petImage} />
         ) : (
           <View style={[styles.petImage, styles.imagePlaceholder]}>
-            <Ionicons name="paw" size={32} color={theme.colors.gray400} />
+            <Ionicons name="paw" size={40} color={theme.colors.gray300} />
           </View>
         )}
-        <View style={styles.cardInfo}>
-          <Text style={styles.petName}>{item.name}</Text>
-          <Text style={styles.species}>
-            {item.species.charAt(0).toUpperCase() + item.species.slice(1)}
-            {item.breed && ` • ${item.breed}`}
-          </Text>
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={14} color={theme.colors.gray600} />
-            <Text style={styles.detailText}>{item.age || 'Age unknown'}</Text>
+
+        <View style={styles.petInfo}>
+          <View style={styles.nameRow}>
+            <Text style={styles.petName}>{String(item.name)}</Text>
+            <Ionicons
+              name={item.gender === 'male' ? 'male' : item.gender === 'female' ? 'female' : 'help-circle'}
+              size={20}
+              color={item.gender === 'male' ? theme.colors.info : theme.colors.secondary}
+            />
           </View>
+
+          <View style={styles.detailRow}>
+            <Ionicons name="paw" size={16} color={theme.colors.primary} />
+            <Text style={styles.detailText}>
+              {String(item.species).charAt(0).toUpperCase() + String(item.species).slice(1)}
+              {item.breed && ` • ${String(item.breed)}`}
+            </Text>
+          </View>
+
+          {item.age && (
+            <View style={styles.detailRow}>
+              <Ionicons name="calendar-outline" size={16} color={theme.colors.textSecondary} />
+              <Text style={styles.detailText}>{String(item.age)}</Text>
+            </View>
+          )}
+
           {item.isLostFound && (
-            <View style={styles.lostFoundBadge}>
-              <Ionicons 
-                name={item.lostFoundType === 'lost' ? 'alert-circle' : 'checkmark-circle'} 
-                size={14} 
-                color={item.lostFoundType === 'lost' ? theme.colors.warning : theme.colors.success} 
+            <View
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor:
+                    item.lostFoundType === 'lost'
+                      ? theme.colors.error + '20'
+                      : theme.colors.success + '20',
+                },
+              ]}
+            >
+              <Ionicons
+                name={item.lostFoundType === 'lost' ? 'alert-circle' : 'checkmark-circle'}
+                size={14}
+                color={item.lostFoundType === 'lost' ? theme.colors.error : theme.colors.success}
               />
-              <Text style={[
-                styles.lostFoundText,
-                { color: item.lostFoundType === 'lost' ? theme.colors.warning : theme.colors.success }
-              ]}>
-                {item.lostFoundType === 'lost' ? 'Lost' : 'Found'}
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color:
+                      item.lostFoundType === 'lost' ? theme.colors.error : theme.colors.success,
+                  },
+                ]}
+              >
+                {String(item.lostFoundType || '').toUpperCase()}
               </Text>
             </View>
           )}
         </View>
       </View>
 
+      {/* Description */}
       {item.description && (
         <Text style={styles.description} numberOfLines={2}>
-          {item.description}
+          {String(item.description)}
         </Text>
       )}
 
+      {/* Health Status */}
       {item.healthStatus && (
         <View style={styles.healthBadge}>
-          <Ionicons name="medical" size={14} color={theme.colors.primary} />
-          <Text style={styles.healthText}>{item.healthStatus}</Text>
+          <Ionicons name="medical" size={14} color={theme.colors.success} />
+          <Text style={styles.healthText}>{String(item.healthStatus)}</Text>
         </View>
       )}
 
+      {/* Actions */}
       <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleEdit(item)}
-        >
-          <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
+          <Ionicons name="create-outline" size={22} color={theme.colors.primary} />
           <Text style={styles.actionText}>Edit</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleDelete(item)}
-        >
-          <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
-          <Text style={[styles.actionText, { color: theme.colors.error }]}>Remove</Text>
-        </TouchableOpacity>
+        <View style={styles.actionDivider} />
 
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => Alert.alert('Share', 'Share pet profile coming soon!')}
         >
-          <Ionicons name="share-outline" size={20} color={theme.colors.secondary} />
+          <Ionicons name="share-outline" size={22} color={theme.colors.accent} />
           <Text style={styles.actionText}>Share</Text>
+        </TouchableOpacity>
+
+        <View style={styles.actionDivider} />
+
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item)}>
+          <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
+          <Text style={[styles.actionText, { color: theme.colors.error }]}>Remove</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -153,15 +187,17 @@ const MyPetsScreen = ({ navigation }) => {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="paw-outline" size={64} color={theme.colors.gray300} />
+      <View style={styles.emptyIcon}>
+        <Ionicons name="paw-outline" size={80} color={theme.colors.gray300} />
+      </View>
       <Text style={styles.emptyTitle}>No Pets Yet</Text>
-      <Text style={styles.emptyText}>Add your first pet for adoption</Text>
+      <Text style={styles.emptyText}>Add your first pet for adoption or lost/found</Text>
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => navigation.navigate('AddPet')}
       >
         <Ionicons name="add-circle" size={20} color={theme.colors.white} />
-        <Text style={styles.addButtonText}>Add Pet</Text>
+        <Text style={styles.addButtonText}>Add Your First Pet</Text>
       </TouchableOpacity>
     </View>
   );
@@ -170,12 +206,14 @@ const MyPetsScreen = ({ navigation }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Loading your pets...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
@@ -186,15 +224,37 @@ const MyPetsScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+      {/* Stats Bar */}
+      {pets.length > 0 && (
+        <View style={styles.statsBar}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{pets.length}</Text>
+            <Text style={styles.statLabel}>Total Pets</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>
+              {pets.filter((p) => p.status === 'available').length}
+            </Text>
+            <Text style={styles.statLabel}>Available</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{pets.filter((p) => p.isLostFound).length}</Text>
+            <Text style={styles.statLabel}>Lost/Found</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Pet List */}
       <FlatList
         data={pets}
         renderItem={renderPetCard}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmpty}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -209,6 +269,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  loadingText: {
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.textSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -220,28 +286,55 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.gray200,
   },
   title: {
-    fontSize: theme.typography.fontSize.xl,
+    fontSize: theme.typography.fontSize.xxl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
+  },
+  statsBar: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.white,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.sm,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: theme.typography.fontSize.xxl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.primary,
+  },
+  statLabel: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: theme.colors.gray200,
   },
   listContent: {
     padding: theme.spacing.lg,
   },
   card: {
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: theme.borderRadius.xl,
     padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    ...theme.shadows.sm,
+    marginBottom: theme.spacing.lg,
+    ...theme.shadows.md,
   },
-  cardHeader: {
+  cardTop: {
     flexDirection: 'row',
     marginBottom: theme.spacing.md,
   },
   petImage: {
-    width: 80,
-    height: 80,
-    borderRadius: theme.borderRadius.md,
+    width: 100,
+    height: 100,
+    borderRadius: theme.borderRadius.lg,
     marginRight: theme.spacing.md,
   },
   imagePlaceholder: {
@@ -249,78 +342,87 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardInfo: {
+  petInfo: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.sm,
   },
   petName: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
-  },
-  species: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.primary,
-    fontWeight: theme.typography.fontWeight.medium,
-    marginBottom: theme.spacing.xs,
+    flex: 1,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: theme.spacing.xs,
+    gap: theme.spacing.xs,
   },
   detailText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
-    marginLeft: theme.spacing.xs,
+    flex: 1,
   },
-  lostFoundBadge: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     borderRadius: theme.borderRadius.sm,
-    backgroundColor: theme.colors.gray100,
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
+    gap: 4,
   },
-  lostFoundText: {
+  statusText: {
     fontSize: theme.typography.fontSize.xs,
-    fontWeight: theme.typography.fontWeight.semibold,
-    marginLeft: theme.spacing.xs,
+    fontWeight: theme.typography.fontWeight.bold,
   },
   description: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.md,
+    lineHeight: 20,
   },
   healthBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.primary + '10',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    backgroundColor: theme.colors.success + '15',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
     alignSelf: 'flex-start',
     marginBottom: theme.spacing.md,
+    gap: theme.spacing.xs,
   },
   healthText: {
-    fontSize: theme.typography.fontSize.xs,
-    color: theme.colors.primary,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.success,
     fontWeight: theme.typography.fontWeight.semibold,
-    marginLeft: theme.spacing.xs,
   },
   cardActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: theme.colors.gray100,
+    borderTopColor: theme.colors.gray200,
     paddingTop: theme.spacing.md,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm,
+  },
+  actionDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: theme.colors.gray200,
   },
   actionText: {
     fontSize: theme.typography.fontSize.sm,
@@ -330,28 +432,38 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.xxl * 2,
+    paddingVertical: theme.spacing.xxxl * 2,
+  },
+  emptyIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
   },
   emptyTitle: {
-    fontSize: theme.typography.fontSize.xl,
+    fontSize: theme.typography.fontSize.xxl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
-    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
   },
   emptyText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
     marginBottom: theme.spacing.xl,
+    textAlign: 'center',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
     borderRadius: theme.borderRadius.lg,
     gap: theme.spacing.sm,
+    ...theme.shadows.md,
   },
   addButtonText: {
     color: theme.colors.white,

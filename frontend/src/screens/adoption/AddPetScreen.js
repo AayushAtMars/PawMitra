@@ -1,3 +1,5 @@
+// UI-ONLY UPDATE: Enhanced styling for Add Pet screen with better visual hierarchy
+// Preserves all existing business logic, API calls, and handlers
 import React, { useState } from 'react';
 import {
   View,
@@ -68,7 +70,6 @@ const AddPetScreen = ({ navigation }) => {
 
       const response = await petsAPI.create(petData);
       
-      // Show success alert
       Alert.alert('Success', 'Pet added successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
@@ -81,175 +82,264 @@ const AddPetScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Add Pet for Adoption</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Add Pet for Adoption</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
-      {/* Photos */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Photos *</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {photos.map((photo, index) => (
-            <View key={index} style={styles.photoContainer}>
-              <Image source={{ uri: photo.uri }} style={styles.photo} />
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removePhoto(index)}
-              >
-                <Ionicons name="close-circle" size={24} color={theme.colors.error} />
-              </TouchableOpacity>
+        {/* Progress Indicator */}
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: '33%' }]} />
+        </View>
+
+        {/* Photos Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="camera" size={24} color={theme.colors.primary} />
+            <Text style={styles.sectionTitle}>Photos *</Text>
+          </View>
+          <Text style={styles.sectionSubtitle}>Add at least one photo of your pet</Text>
+          
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.photosContainer}
+          >
+            {photos.map((photo, index) => (
+              <View key={index} style={styles.photoWrapper}>
+                <Image source={{ uri: photo.uri }} style={styles.photo} />
+                <TouchableOpacity
+                  style={styles.removePhotoButton}
+                  onPress={() => removePhoto(index)}
+                >
+                  <Ionicons name="close-circle" size={28} color={theme.colors.error} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
+              <Ionicons name="add-circle" size={40} color={theme.colors.primary} />
+              <Text style={styles.addPhotoText}>Add Photo</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        {/* Basic Information */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="information-circle" size={24} color={theme.colors.secondary} />
+            <Text style={styles.sectionTitle}>Basic Information</Text>
+          </View>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Pet Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Buddy, Luna"
+              value={formData.name}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
+              placeholderTextColor={theme.colors.gray400}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Species *</Text>
+            <View style={styles.chipRow}>
+              {[
+                { label: '🐕 Dog', value: 'dog' },
+                { label: '🐈 Cat', value: 'cat' },
+                { label: '🐾 Other', value: 'other' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.chip,
+                    formData.species === option.value && styles.chipActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, species: option.value })}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      formData.species === option.value && styles.chipTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          ))}
-          <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
-            <Ionicons name="camera" size={32} color={theme.colors.primary} />
-            <Text style={styles.addPhotoText}>Add Photo</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Basic Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Basic Information</Text>
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Pet Name *"
-          value={formData.name}
-          onChangeText={(text) => setFormData({ ...formData, name: text })}
-        />
-
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.chip, formData.species === 'dog' && styles.chipActive]}
-            onPress={() => setFormData({ ...formData, species: 'dog' })}
-          >
-            <Text style={[styles.chipText, formData.species === 'dog' && styles.chipTextActive]}>
-              🐕 Dog
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.chip, formData.species === 'cat' && styles.chipActive]}
-            onPress={() => setFormData({ ...formData, species: 'cat' })}
-          >
-            <Text style={[styles.chipText, formData.species === 'cat' && styles.chipTextActive]}>
-              🐈 Cat
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.chip, formData.species === 'other' && styles.chipActive]}
-            onPress={() => setFormData({ ...formData, species: 'other' })}
-          >
-            <Text style={[styles.chipText, formData.species === 'other' && styles.chipTextActive]}>
-              🐾 Other
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Breed"
-          value={formData.breed}
-          onChangeText={(text) => setFormData({ ...formData, breed: text })}
-        />
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Age (e.g., 2 years)"
-            value={formData.age}
-            onChangeText={(text) => setFormData({ ...formData, age: text })}
-          />
-          <View style={[styles.input, styles.halfInput, styles.genderContainer]}>
-            <TouchableOpacity
-              style={[styles.genderButton, formData.gender === 'male' && styles.genderActive]}
-              onPress={() => setFormData({ ...formData, gender: 'male' })}
-            >
-              <Ionicons name="male" size={20} color={formData.gender === 'male' ? theme.colors.white : theme.colors.gray600} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.genderButton, formData.gender === 'female' && styles.genderActive]}
-              onPress={() => setFormData({ ...formData, gender: 'female' })}
-            >
-              <Ionicons name="female" size={20} color={formData.gender === 'female' ? theme.colors.white : theme.colors.gray600} />
-            </TouchableOpacity>
           </View>
-        </View>
 
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Description"
-          value={formData.description}
-          onChangeText={(text) => setFormData({ ...formData, description: text })}
-          multiline
-          numberOfLines={4}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Health Status (e.g., Vaccinated, Healthy)"
-          value={formData.healthStatus}
-          onChangeText={(text) => setFormData({ ...formData, healthStatus: text })}
-        />
-      </View>
-
-      {/* Lost & Found Toggle */}
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={styles.toggleRow}
-          onPress={() => setFormData({ ...formData, isLostFound: !formData.isLostFound })}
-        >
-          <View>
-            <Text style={styles.toggleTitle}>Mark as Lost/Found</Text>
-            <Text style={styles.toggleSubtitle}>This is a lost or found pet</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Breed</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Golden Retriever, Persian"
+              value={formData.breed}
+              onChangeText={(text) => setFormData({ ...formData, breed: text })}
+              placeholderTextColor={theme.colors.gray400}
+            />
           </View>
-          <View style={[styles.toggle, formData.isLostFound && styles.toggleActive]}>
-            <View style={[styles.toggleThumb, formData.isLostFound && styles.toggleThumbActive]} />
-          </View>
-        </TouchableOpacity>
 
-        {formData.isLostFound && (
           <View style={styles.row}>
-            <TouchableOpacity
-              style={[styles.chip, formData.lostFoundType === 'lost' && styles.chipActive]}
-              onPress={() => setFormData({ ...formData, lostFoundType: 'lost' })}
-            >
-              <Text style={[styles.chipText, formData.lostFoundType === 'lost' && styles.chipTextActive]}>
-                Lost
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.chip, formData.lostFoundType === 'found' && styles.chipActive]}
-              onPress={() => setFormData({ ...formData, lostFoundType: 'found' })}
-            >
-              <Text style={[styles.chipText, formData.lostFoundType === 'found' && styles.chipTextActive]}>
-                Found
-              </Text>
-            </TouchableOpacity>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: theme.spacing.md }]}>
+              <Text style={styles.inputLabel}>Age</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., 2 years"
+                value={formData.age}
+                onChangeText={(text) => setFormData({ ...formData, age: text })}
+                placeholderTextColor={theme.colors.gray400}
+              />
+            </View>
+
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.inputLabel}>Gender</Text>
+              <View style={styles.genderButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.genderButton,
+                    formData.gender === 'male' && styles.genderButtonActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, gender: 'male' })}
+                >
+                  <Ionicons
+                    name="male"
+                    size={24}
+                    color={formData.gender === 'male' ? theme.colors.white : theme.colors.gray600}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.genderButton,
+                    formData.gender === 'female' && styles.genderButtonActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, gender: 'female' })}
+                >
+                  <Ionicons
+                    name="female"
+                    size={24}
+                    color={formData.gender === 'female' ? theme.colors.white : theme.colors.gray600}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        )}
-      </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Tell us about your pet's personality, habits, etc."
+              value={formData.description}
+              onChangeText={(text) => setFormData({ ...formData, description: text })}
+              multiline
+              numberOfLines={4}
+              placeholderTextColor={theme.colors.gray400}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Health Status</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Vaccinated, Neutered, Healthy"
+              value={formData.healthStatus}
+              onChangeText={(text) => setFormData({ ...formData, healthStatus: text })}
+              placeholderTextColor={theme.colors.gray400}
+            />
+          </View>
+        </View>
+
+        {/* Lost & Found Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="search" size={24} color={theme.colors.accent} />
+            <Text style={styles.sectionTitle}>Lost & Found</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.toggleCard}
+            onPress={() => setFormData({ ...formData, isLostFound: !formData.isLostFound })}
+          >
+            <View style={styles.toggleInfo}>
+              <Text style={styles.toggleTitle}>Mark as Lost/Found</Text>
+              <Text style={styles.toggleSubtitle}>This is a lost or found pet</Text>
+            </View>
+            <View style={[styles.toggle, formData.isLostFound && styles.toggleActive]}>
+              <View style={[styles.toggleThumb, formData.isLostFound && styles.toggleThumbActive]} />
+            </View>
+          </TouchableOpacity>
+
+          {formData.isLostFound && (
+            <View style={styles.chipRow}>
+              {[
+                { label: 'Lost', value: 'lost', icon: 'alert-circle' },
+                { label: 'Found', value: 'found', icon: 'checkmark-circle' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.chip,
+                    formData.lostFoundType === option.value && styles.chipActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, lostFoundType: option.value })}
+                >
+                  <Ionicons
+                    name={option.icon}
+                    size={18}
+                    color={
+                      formData.lostFoundType === option.value
+                        ? theme.colors.white
+                        : theme.colors.gray600
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.chipText,
+                      formData.lostFoundType === option.value && styles.chipTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Spacer */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
 
       {/* Submit Button */}
-      <TouchableOpacity
-        style={styles.submitButton}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={theme.colors.white} />
-        ) : (
-          <>
-            <Ionicons name="checkmark-circle" size={24} color={theme.colors.white} />
-            <Text style={styles.submitText}>Add Pet</Text>
-          </>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={theme.colors.white} />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={24} color={theme.colors.white} />
+              <Text style={styles.submitText}>Add Pet</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -258,68 +348,104 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
-    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxxl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.white,
   },
   title: {
     fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
   },
-  section: {
-    marginBottom: theme.spacing.xl,
+  progressBar: {
+    height: 4,
+    backgroundColor: theme.colors.gray200,
   },
-  sectionTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.textPrimary,
+  progressFill: {
+    height: '100%',
+    backgroundColor: theme.colors.primary,
+  },
+  section: {
+    padding: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
-  photoContainer: {
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+  },
+  sectionTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.textPrimary,
+  },
+  sectionSubtitle: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
+  },
+  photosContainer: {
+    gap: theme.spacing.md,
+  },
+  photoWrapper: {
     position: 'relative',
-    marginRight: theme.spacing.md,
   },
   photo: {
-    width: 100,
-    height: 100,
-    borderRadius: theme.borderRadius.md,
+    width: 120,
+    height: 120,
+    borderRadius: theme.borderRadius.lg,
   },
-  removeButton: {
+  removePhotoButton: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -10,
+    right: -10,
     backgroundColor: theme.colors.white,
-    borderRadius: 12,
+    borderRadius: theme.borderRadius.full,
   },
   addPhotoButton: {
-    width: 100,
-    height: 100,
-    borderRadius: theme.borderRadius.md,
+    width: 120,
+    height: 120,
+    borderRadius: theme.borderRadius.lg,
     borderWidth: 2,
-    borderColor: theme.colors.gray300,
+    borderColor: theme.colors.primary,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: theme.colors.primary + '10',
   },
   addPhotoText: {
-    fontSize: theme.typography.fontSize.xs,
-    color: theme.colors.gray600,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeight.semibold,
     marginTop: theme.spacing.xs,
+  },
+  inputGroup: {
+    marginBottom: theme.spacing.lg,
+  },
+  inputLabel: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
   },
   input: {
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.gray200,
     fontSize: theme.typography.fontSize.md,
+    color: theme.colors.textPrimary,
   },
   textArea: {
     height: 100,
@@ -327,19 +453,22 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.md,
   },
-  halfInput: {
-    flex: 1,
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.full,
     borderWidth: 1,
     borderColor: theme.colors.gray300,
     backgroundColor: theme.colors.white,
+    gap: theme.spacing.sm,
   },
   chipActive: {
     backgroundColor: theme.colors.primary,
@@ -347,31 +476,42 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: theme.colors.gray600,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontWeight: theme.typography.fontWeight.semibold,
+    fontSize: theme.typography.fontSize.md,
   },
   chipTextActive: {
     color: theme.colors.white,
   },
-  genderContainer: {
+  genderButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   genderButton: {
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
+    flex: 1,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.white,
+    borderWidth: 1,
+    borderColor: theme.colors.gray200,
+    alignItems: 'center',
   },
-  genderActive: {
+  genderButtonActive: {
     backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
-  toggleRow: {
+  toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: theme.colors.white,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
     marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.gray200,
+  },
+  toggleInfo: {
+    flex: 1,
   },
   toggleTitle: {
     fontSize: theme.typography.fontSize.md,
@@ -381,25 +521,37 @@ const styles = StyleSheet.create({
   toggleSubtitle: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
   },
   toggle: {
-    width: 50,
-    height: 28,
-    borderRadius: 14,
+    width: 56,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: theme.colors.gray300,
-    padding: 2,
+    padding: 3,
   },
   toggleActive: {
     backgroundColor: theme.colors.primary,
   },
   toggleThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: theme.colors.white,
   },
   toggleThumbActive: {
-    transform: [{ translateX: 22 }],
+    transform: [{ translateX: 24 }],
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.white,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.gray200,
+    ...theme.shadows.lg,
   },
   submitButton: {
     flexDirection: 'row',
@@ -409,7 +561,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
     gap: theme.spacing.sm,
-    ...theme.shadows.md,
   },
   submitText: {
     color: theme.colors.white,

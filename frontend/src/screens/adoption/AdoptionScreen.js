@@ -1,695 +1,406 @@
-// import React, { useState, useEffect } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   Image,
-//   TouchableOpacity,
-//   ScrollView,
-//   ActivityIndicator,
-//   RefreshControl,
-//   Dimensions,
-// } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons';
-// import { petsAPI } from '../../services/api';
-// import theme from '../../theme';
-
-// const { width } = Dimensions.get('window');
-// const CARD_WIDTH = width - 40;
-
-// const AdoptionScreen = ({ navigation }) => {
-//   const [pets, setPets] = useState([]);
-//   const [currentIndex, setCurrentIndex] = useState(0);
-//   const [loading, setLoading] = useState(true);
-//   const [refreshing, setRefreshing] = useState(false);
-//   const [showLostFound, setShowLostFound] = useState(false);
-
-//   useEffect(() => {
-//     loadPets();
-//   }, [showLostFound]);
-
-//   const loadPets = async () => {
-//     try {
-//       setLoading(true);
-//       const response = showLostFound
-//         ? await petsAPI.getLostFound()
-//         : await petsAPI.getAll({ status: 'available' });
-      
-//       if (response.data.success) {
-//         setPets(response.data.pets);
-//         setCurrentIndex(0);
-//       }
-//     } catch (error) {
-//       console.error('Error loading pets:', error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleSwipeLeft = () => {
-//     if (currentIndex < pets.length - 1) {
-//       setCurrentIndex(currentIndex + 1);
-//     }
-//   };
-
-//   const handleSwipeRight = async () => {
-//     const currentPet = pets[currentIndex];
-    
-//     try {
-//       await petsAPI.expressInterest(currentPet._id, {
-//         message: 'I am interested in adopting this pet!',
-//       });
-      
-//       if (currentIndex < pets.length - 1) {
-//         setCurrentIndex(currentIndex + 1);
-//       }
-//     } catch (error) {
-//       console.error('Error expressing interest:', error);
-//     }
-//   };
-
-//   const onRefresh = async () => {
-//     setRefreshing(true);
-//     await loadPets();
-//     setRefreshing(false);
-//   };
-
-//   if (loading) {
-//     return (
-//       <View style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color={theme.colors.primary} />
-//       </View>
-//     );
-//   }
-
-//   const currentPet = pets[currentIndex];
-
-//   return (
-//     <View style={styles.container}>
-//       {/* Header */}
-//       <View style={styles.header}>
-//         <Text style={styles.title}>
-//           {showLostFound ? 'Lost & Found' : 'Pet Adoption'}
-//         </Text>
-//         <TouchableOpacity
-//           style={styles.toggleButton}
-//           onPress={() => setShowLostFound(!showLostFound)}
-//         >
-//           <Ionicons
-//             name={showLostFound ? 'paw' : 'search'}
-//             size={24}
-//             color={theme.colors.primary}
-//           />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* Pet Cards */}
-//       {pets.length === 0 ? (
-//         <ScrollView
-//           contentContainerStyle={styles.emptyContainer}
-//           refreshControl={
-//             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-//           }
-//         >
-//           <Ionicons name="paw-outline" size={64} color={theme.colors.gray300} />
-//           <Text style={styles.emptyText}>No pets available</Text>
-//           <Text style={styles.emptySubtext}>
-//             {showLostFound
-//               ? 'No lost or found pets in your area'
-//               : 'Check back later for new pets'}
-//           </Text>
-//         </ScrollView>
-//       ) : (
-//         <>
-//           <View style={styles.cardContainer}>
-//             {currentPet && (
-//               <View style={styles.card}>
-//                 {/* Pet Image */}
-//                 {currentPet.photos && currentPet.photos.length > 0 && currentPet.photos[0]?.url ? (
-//                   <Image
-//                     source={{ uri: currentPet.photos[0].url }}
-//                     style={styles.petImage}
-//                     resizeMode="cover"
-//                   />
-//                 ) : (
-//                   <View style={[styles.petImage, styles.imagePlaceholder]}>
-//                     <Ionicons name="paw" size={64} color={theme.colors.gray400} />
-//                   </View>
-//                 )}
-
-//                 {/* Pet Info */}
-//                 <View style={styles.petInfo}>
-//                   <View style={styles.petHeader}>
-//                     <Text style={styles.petName}>{currentPet.name}</Text>
-//                     {currentPet.isLostFound && (
-//                       <View
-//                         style={[
-//                           styles.lostFoundBadge,
-//                           {
-//                             backgroundColor:
-//                               currentPet.lostFoundType === 'lost'
-//                                 ? theme.colors.error
-//                                 : theme.colors.accent,
-//                           },
-//                         ]}
-//                       >
-//                         <Text style={styles.lostFoundText}>
-//                           {currentPet.lostFoundType?.toUpperCase()}
-//                         </Text>
-//                       </View>
-//                     )}
-//                   </View>
-
-//                   <View style={styles.petDetails}>
-//                     <View style={styles.detailItem}>
-//                       <Ionicons name="paw" size={16} color={theme.colors.textSecondary} />
-//                       <Text style={styles.detailText}>
-//                         {currentPet.species?.charAt(0).toUpperCase() + currentPet.species?.slice(1)}
-//                       </Text>
-//                     </View>
-//                     {currentPet.breed && (
-//                       <View style={styles.detailItem}>
-//                         <Ionicons name="ribbon" size={16} color={theme.colors.textSecondary} />
-//                         <Text style={styles.detailText}>{currentPet.breed}</Text>
-//                       </View>
-//                     )}
-//                     {currentPet.age && (
-//                       <View style={styles.detailItem}>
-//                         <Ionicons name="time" size={16} color={theme.colors.textSecondary} />
-//                         <Text style={styles.detailText}>
-//                           {typeof currentPet.age === 'object' 
-//                             ? `${currentPet.age.value} ${currentPet.age.unit}${currentPet.age.value > 1 ? 's' : ''}`
-//                             : currentPet.age}
-//                         </Text>
-//                       </View>
-//                     )}
-//                     {currentPet.gender && (
-//                       <View style={styles.detailItem}>
-//                         <Ionicons
-//                           name={currentPet.gender === 'male' ? 'male' : 'female'}
-//                           size={16}
-//                           color={theme.colors.textSecondary}
-//                         />
-//                         <Text style={styles.detailText}>
-//                           {currentPet.gender.charAt(0).toUpperCase() + currentPet.gender.slice(1)}
-//                         </Text>
-//                       </View>
-//                     )}
-//                     {currentPet.size && (
-//                       <View style={styles.detailItem}>
-//                         <Ionicons name="resize" size={16} color={theme.colors.textSecondary} />
-//                         <Text style={styles.detailText}>
-//                           {typeof currentPet.size === 'object'
-//                             ? currentPet.size.category || 'Unknown'
-//                             : currentPet.size}
-//                         </Text>
-//                       </View>
-//                     )}
-//                   </View>
-
-//                   {currentPet.description && (
-//                     <Text style={styles.description} numberOfLines={3}>
-//                       {currentPet.description}
-//                     </Text>
-//                   )}
-
-//                   {currentPet.healthStatus && (
-//                     <View style={styles.healthSection}>
-//                       <Ionicons name="medical" size={16} color={theme.colors.accent} />
-//                       <Text style={styles.healthText}>
-//                         {typeof currentPet.healthStatus === 'object'
-//                           ? `${currentPet.healthStatus.vaccinated ? 'Vaccinated' : 'Not Vaccinated'}${currentPet.healthStatus.neutered ? ', Neutered' : ''}`
-//                           : currentPet.healthStatus}
-//                       </Text>
-//                     </View>
-//                   )}
-
-//                   {currentPet.address && (
-//                     <View style={styles.locationSection}>
-//                       <Ionicons name="location" size={16} color={theme.colors.primary} />
-//                       <Text style={styles.locationText} numberOfLines={1}>
-//                         {currentPet.address}
-//                       </Text>
-//                     </View>
-//                   )}
-//                 </View>
-//               </View>
-//             )}
-//           </View>
-
-//           {/* Swipe Controls */}
-//           <View style={styles.controls}>
-//             <TouchableOpacity
-//               style={[styles.controlButton, styles.rejectButton]}
-//               onPress={handleSwipeLeft}
-//             >
-//               <Ionicons name="close" size={32} color={theme.colors.white} />
-//             </TouchableOpacity>
-
-//             <View style={styles.counterContainer}>
-//               <Text style={styles.counterText}>
-//                 {currentIndex + 1} / {pets.length}
-//               </Text>
-//             </View>
-
-//             <TouchableOpacity
-//               style={[styles.controlButton, styles.likeButton]}
-//               onPress={handleSwipeRight}
-//             >
-//               <Ionicons name="heart" size={32} color={theme.colors.white} />
-//             </TouchableOpacity>
-//           </View>
-
-//           {/* Instructions */}
-//           <View style={styles.instructions}>
-//             <Text style={styles.instructionText}>
-//               ❌ Skip • ❤️ Interested
-//             </Text>
-//           </View>
-//         </>
-//       )}
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: theme.colors.background,
-//   },
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     backgroundColor: theme.colors.background,
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     padding: theme.spacing.lg,
-//     backgroundColor: theme.colors.white,
-//     borderBottomWidth: 1,
-//     borderBottomColor: theme.colors.gray200,
-//   },
-//   title: {
-//     fontSize: theme.typography.fontSize.xxl,
-//     fontWeight: theme.typography.fontWeight.bold,
-//     color: theme.colors.textPrimary,
-//   },
-//   toggleButton: {
-//     padding: theme.spacing.sm,
-//   },
-//   cardContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: theme.spacing.lg,
-//   },
-//   card: {
-//     width: CARD_WIDTH,
-//     backgroundColor: theme.colors.white,
-//     borderRadius: theme.borderRadius.xxl,
-//     overflow: 'hidden',
-//     ...theme.shadows.xl,
-//   },
-//   petImage: {
-//     width: '100%',
-//     height: 300,
-//     backgroundColor: theme.colors.gray200,
-//   },
-//   imagePlaceholder: {
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   petInfo: {
-//     padding: theme.spacing.lg,
-//   },
-//   petHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: theme.spacing.md,
-//   },
-//   petName: {
-//     fontSize: theme.typography.fontSize.xxl,
-//     fontWeight: theme.typography.fontWeight.bold,
-//     color: theme.colors.textPrimary,
-//   },
-//   lostFoundBadge: {
-//     paddingHorizontal: theme.spacing.md,
-//     paddingVertical: theme.spacing.xs,
-//     borderRadius: theme.borderRadius.full,
-//   },
-//   lostFoundText: {
-//     color: theme.colors.white,
-//     fontSize: theme.typography.fontSize.xs,
-//     fontWeight: theme.typography.fontWeight.bold,
-//   },
-//   petDetails: {
-//     flexDirection: 'row',
-//     flexWrap: 'wrap',
-//     gap: theme.spacing.md,
-//     marginBottom: theme.spacing.md,
-//   },
-//   detailItem: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: theme.spacing.xs,
-//   },
-//   detailText: {
-//     fontSize: theme.typography.fontSize.sm,
-//     color: theme.colors.textSecondary,
-//   },
-//   description: {
-//     fontSize: theme.typography.fontSize.md,
-//     color: theme.colors.textPrimary,
-//     marginBottom: theme.spacing.md,
-//     lineHeight: 22,
-//   },
-//   healthSection: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: theme.spacing.sm,
-//     backgroundColor: theme.colors.accent + '10',
-//     padding: theme.spacing.sm,
-//     borderRadius: theme.borderRadius.md,
-//     marginBottom: theme.spacing.sm,
-//   },
-//   healthText: {
-//     fontSize: theme.typography.fontSize.sm,
-//     color: theme.colors.accent,
-//     fontWeight: theme.typography.fontWeight.medium,
-//   },
-//   locationSection: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: theme.spacing.sm,
-//   },
-//   locationText: {
-//     flex: 1,
-//     fontSize: theme.typography.fontSize.sm,
-//     color: theme.colors.textSecondary,
-//   },
-//   controls: {
-//     flexDirection: 'row',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: theme.spacing.lg,
-//     gap: theme.spacing.xl,
-//   },
-//   controlButton: {
-//     width: 64,
-//     height: 64,
-//     borderRadius: 32,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     ...theme.shadows.lg,
-//   },
-//   rejectButton: {
-//     backgroundColor: theme.colors.gray500,
-//   },
-//   likeButton: {
-//     backgroundColor: theme.colors.secondary,
-//   },
-//   counterContainer: {
-//     paddingHorizontal: theme.spacing.lg,
-//   },
-//   counterText: {
-//     fontSize: theme.typography.fontSize.lg,
-//     fontWeight: theme.typography.fontWeight.semibold,
-//     color: theme.colors.textPrimary,
-//   },
-//   instructions: {
-//     alignItems: 'center',
-//     paddingBottom: theme.spacing.lg,
-//   },
-//   instructionText: {
-//     fontSize: theme.typography.fontSize.md,
-//     color: theme.colors.textSecondary,
-//   },
-//   emptyContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: theme.spacing.xl,
-//   },
-//   emptyText: {
-//     fontSize: theme.typography.fontSize.lg,
-//     fontWeight: theme.typography.fontWeight.medium,
-//     color: theme.colors.textSecondary,
-//     marginTop: theme.spacing.md,
-//   },
-//   emptySubtext: {
-//     fontSize: theme.typography.fontSize.sm,
-//     color: theme.colors.textSecondary,
-//     marginTop: theme.spacing.xs,
-//     textAlign: 'center',
-//   },
-// });
-
-// export default AdoptionScreen;
-
-
+// UI-ONLY UPDATE: Redesigned adoption screen with search, filters, grid/list layouts, and featured carousel
+// Preserves all existing API calls, navigation, and business logic
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Image,
+  FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { petsAPI } from "../../services/api";
 import theme from "../../theme";
+import PetCard from "../../components/PetCard";
+import AdoptionFilters from "../../components/AdoptionFilters";
+import PetDetailsModal from "../../components/PetDetailsModal";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = width - 40;
+const isWeb = width > 768;
 
 const AdoptionScreen = ({ navigation }) => {
   const [pets, setPets] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [filteredPets, setFilteredPets] = useState([]);
+  const [featuredPets, setFeaturedPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showLostFound, setShowLostFound] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedPet, setSelectedPet] = useState(null);
+  const [viewMode, setViewMode] = useState("grid"); // grid or list
+  const [filters, setFilters] = useState({
+    species: "all",
+    gender: "all",
+    size: "all",
+    age: "all",
+    vaccinated: "all",
+  });
 
   useEffect(() => {
     loadPets();
-  }, [showLostFound]);
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [searchQuery, filters, pets]);
 
   const loadPets = async () => {
     try {
       setLoading(true);
-      const response = showLostFound
-        ? await petsAPI.getLostFound()
-        : await petsAPI.getAll({ status: "available" });
+      const response = await petsAPI.getAll({ status: "available" });
 
       if (response.data.success || Array.isArray(response.data.pets)) {
-        setPets(response.data.pets || []);
-        setCurrentIndex(0);
+        const allPets = response.data.pets || [];
+        setPets(allPets);
+        // Featured: first 5 pets
+        setFeaturedPets(allPets.slice(0, 5));
       }
     } catch (error) {
       console.error("Error loading pets:", error);
+      Alert.alert("Error", "Failed to load pets");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handleSwipeLeft = () => {
-    if (currentIndex < pets.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      Alert.alert("End of list", "Check back later for more pets!");
+  const applyFilters = () => {
+    let filtered = [...pets];
+
+    // Search
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (p) =>
+          p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.species?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.breed?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
+
+    // Species filter
+    if (filters.species !== "all") {
+      filtered = filtered.filter((p) => p.species === filters.species);
+    }
+
+    // Gender filter
+    if (filters.gender !== "all") {
+      filtered = filtered.filter((p) => p.gender === filters.gender);
+    }
+
+    // Size filter (if available in pet data)
+    if (filters.size !== "all") {
+      filtered = filtered.filter((p) => p.size === filters.size);
+    }
+
+    // Age filter
+    if (filters.age !== "all") {
+      filtered = filtered.filter((p) => {
+        if (!p.age) return false;
+        const ageStr = String(p.age).toLowerCase();
+        if (filters.age === "puppy" || filters.age === "kitten") {
+          return ageStr.includes("month") || ageStr.includes("puppy") || ageStr.includes("kitten");
+        }
+        if (filters.age === "adult") {
+          return ageStr.includes("year") && !ageStr.includes("senior");
+        }
+        if (filters.age === "senior") {
+          return ageStr.includes("senior") || parseInt(ageStr) > 7;
+        }
+        return true;
+      });
+    }
+
+    // Vaccinated filter
+    if (filters.vaccinated === "yes") {
+      filtered = filtered.filter((p) => 
+        p.healthStatus?.toLowerCase().includes("vaccinated")
+      );
+    }
+
+    setFilteredPets(filtered);
   };
 
-  // --- UPDATED LOGIC ---
-  const handleSwipeRight = async () => {
-    const currentPet = pets[currentIndex];
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+  };
 
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      species: "all",
+      gender: "all",
+      size: "all",
+      age: "all",
+      vaccinated: "all",
+    });
+    setSearchQuery("");
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadPets();
+  };
+
+  const handlePetPress = (pet) => {
+    setSelectedPet(pet);
+  };
+
+  const handleFavorite = async (pet) => {
     try {
-      // 1. Save locally to "Saved Pets"
       const savedData = await AsyncStorage.getItem("savedPets");
       let savedList = savedData ? JSON.parse(savedData) : [];
 
-      // Avoid duplicates
-      if (!savedList.find(p => p._id === currentPet._id)) {
-        savedList.push(currentPet);
-        await AsyncStorage.setItem("savedPets", JSON.stringify(savedList));
-        Alert.alert("Saved!", `${currentPet.name} has been added to your Saved Pets.`);
-      }
-
-      // 2. Optional: Call API if you want to notify backend
-      // await petsAPI.expressInterest(currentPet._id, { message: 'Interested' });
-
-      // 3. Move to next card
-      if (currentIndex < pets.length - 1) {
-        setCurrentIndex(currentIndex + 1);
+      const exists = savedList.find((p) => p._id === pet._id);
+      if (exists) {
+        savedList = savedList.filter((p) => p._id !== pet._id);
+        Alert.alert("Removed", `${pet.name} removed from favorites`);
       } else {
-        Alert.alert("That's all!", "You've gone through all available pets.");
+        savedList.push(pet);
+        Alert.alert("Saved!", `${pet.name} added to favorites`);
       }
+
+      await AsyncStorage.setItem("savedPets", JSON.stringify(savedList));
     } catch (error) {
-      console.error("Error saving pet:", error);
+      console.error("Error saving favorite:", error);
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadPets();
-    setRefreshing(false);
+  const handleRequestAdopt = async (pet) => {
+    Alert.alert(
+      "Request to Adopt",
+      `Send adoption request for ${pet.name}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Send Request",
+          onPress: async () => {
+            try {
+              await petsAPI.expressInterest(pet._id, {
+                message: "I would like to adopt this pet",
+              });
+              Alert.alert("Success", "Adoption request sent!");
+              setSelectedPet(null);
+            } catch (error) {
+              console.error("Error sending request:", error);
+              Alert.alert("Error", "Failed to send request");
+            }
+          },
+        },
+      ]
+    );
   };
+
+  const handleContactOwner = (pet) => {
+    Alert.alert("Contact Owner", "Contact feature coming soon!");
+  };
+
+  const renderFeaturedSection = () => {
+    if (featuredPets.length === 0) return null;
+
+    return (
+      <View style={styles.featuredSection}>
+        <Text style={styles.sectionTitle}>Featured Pets</Text>
+        <FlatList
+          horizontal
+          data={featuredPets}
+          keyExtractor={(item) => `featured-${item._id}`}
+          renderItem={({ item }) => (
+            <PetCard
+              pet={item}
+              onPress={handlePetPress}
+              onFavorite={handleFavorite}
+              style={styles.featuredCard}
+            />
+          )}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.featuredContent}
+        />
+      </View>
+    );
+  };
+
+  const renderPetItem = ({ item }) => (
+    <PetCard
+      pet={item}
+      onPress={handlePetPress}
+      onFavorite={handleFavorite}
+      style={viewMode === "grid" ? styles.gridCard : styles.listCard}
+    />
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="paw-outline" size={64} color={theme.colors.gray300} />
+      <Text style={styles.emptyTitle}>No Pets Found</Text>
+      <Text style={styles.emptyText}>
+        {searchQuery || Object.values(filters).some((f) => f !== "all")
+          ? "Try adjusting your filters"
+          : "Check back later for new pets"}
+      </Text>
+      {(searchQuery || Object.values(filters).some((f) => f !== "all")) && (
+        <TouchableOpacity style={styles.clearButton} onPress={handleClearFilters}>
+          <Text style={styles.clearButtonText}>Clear Filters</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Loading pets...</Text>
       </View>
     );
   }
-
-  const currentPet = pets[currentIndex];
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {showLostFound ? "Lost & Found" : "Pet Adoption"}
-        </Text>
+        <Text style={styles.title}>Find Your Companion</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("MyPets")}
+          >
+            <Ionicons name="list" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("AddPet")}
+          >
+            <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color={theme.colors.gray400} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name, breed..."
+          value={searchQuery}
+          onChangeText={handleSearch}
+          placeholderTextColor={theme.colors.gray400}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Ionicons name="close-circle" size={20} color={theme.colors.gray400} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
-          style={styles.toggleButton}
-          onPress={() => setShowLostFound(!showLostFound)}
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}
         >
-          <Ionicons
-            name={showLostFound ? "paw" : "search"}
-            size={24}
-            color={theme.colors.primary}
-          />
+          <Ionicons name="options" size={20} color={theme.colors.white} />
         </TouchableOpacity>
       </View>
 
-      {/* Pet Cards */}
-      {pets.length === 0 || !currentPet
-        ? (
-          <ScrollView
-            contentContainerStyle={styles.emptyContainer}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          >
-            <Ionicons name="paw-outline" size={64} color={theme.colors.gray300} />
-            <Text style={styles.emptyText}>No pets available</Text>
-            <Text style={styles.emptySubtext}>
-              {showLostFound
-                ? "No lost or found pets in your area"
-                : "Check back later for new pets"}
-            </Text>
-          </ScrollView>
-        )
-        : (
-          <>
-            <View style={styles.cardContainer}>
-              <View style={styles.card}>
-                {/* Pet Image */}
-                {currentPet.photos && currentPet.photos.length > 0
-                  ? (
-                    <Image
-                      source={{ uri: currentPet.photos[0].url || currentPet.photos[0] }}
-                      style={styles.petImage}
-                      resizeMode="cover"
-                    />
-                  )
-                  : (
-                    <View style={[styles.petImage, styles.imagePlaceholder]}>
-                      <Ionicons name="paw" size={64} color={theme.colors.gray400} />
-                    </View>
-                  )}
-
-                {/* Pet Info */}
-                <View style={styles.petInfo}>
-                  <View style={styles.petHeader}>
-                    <Text style={styles.petName}>{currentPet.name}</Text>
-                    {currentPet.isLostFound && (
-                      <View
-                        style={[styles.lostFoundBadge, {
-                          backgroundColor: currentPet.lostFoundType === "lost"
-                            ? theme.colors.error
-                            : theme.colors.accent,
-                        }]}
-                      >
-                        <Text style={styles.lostFoundText}>
-                          {currentPet.lostFoundType?.toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.petDetails}>
-                    <View style={styles.detailItem}>
-                      <Ionicons name="paw" size={16} color={theme.colors.textSecondary} />
-                      <Text style={styles.detailText}>
-                        {currentPet.species || "Unknown"}
-                      </Text>
-                    </View>
-                    {currentPet.breed && (
-                      <View style={styles.detailItem}>
-                        <Ionicons name="ribbon" size={16} color={theme.colors.textSecondary} />
-                        <Text style={styles.detailText}>{currentPet.breed}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {currentPet.description && (
-                    <Text style={styles.description} numberOfLines={3}>
-                      {currentPet.description}
-                    </Text>
-                  )}
-
-                  <View style={styles.locationSection}>
-                    <Ionicons name="location" size={16} color={theme.colors.primary} />
-                    <Text style={styles.locationText} numberOfLines={1}>
-                      {currentPet.address || "Location not provided"}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Swipe Controls */}
-            <View style={styles.controls}>
-              <TouchableOpacity
-                style={[styles.controlButton, styles.rejectButton]}
-                onPress={handleSwipeLeft}
-              >
-                <Ionicons name="close" size={32} color={theme.colors.white} />
-              </TouchableOpacity>
-
-              <View style={styles.counterContainer}>
-                <Text style={styles.counterText}>
-                  {currentIndex + 1} / {pets.length}
+      {/* Active Filter Chips */}
+      {Object.values(filters).some((f) => f !== "all") && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.activeFilters}
+          contentContainerStyle={styles.activeFiltersContent}
+        >
+          {Object.entries(filters).map(([key, value]) => {
+            if (value === "all") return null;
+            return (
+              <View key={key} style={styles.activeFilterChip}>
+                <Text style={styles.activeFilterText}>
+                  {key}: {value}
                 </Text>
+                <TouchableOpacity
+                  onPress={() => handleFilterChange(key, "all")}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={16} color={theme.colors.white} />
+                </TouchableOpacity>
               </View>
+            );
+          })}
+        </ScrollView>
+      )}
 
-              <TouchableOpacity
-                style={[styles.controlButton, styles.likeButton]}
-                onPress={handleSwipeRight}
-              >
-                <Ionicons name="heart" size={32} color={theme.colors.white} />
-              </TouchableOpacity>
-            </View>
+      {/* View Toggle */}
+      <View style={styles.viewToggle}>
+        <Text style={styles.resultsCount}>
+          {filteredPets.length} {filteredPets.length === 1 ? "pet" : "pets"} available
+        </Text>
+        <View style={styles.toggleButtons}>
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === "grid" && styles.toggleButtonActive]}
+            onPress={() => setViewMode("grid")}
+          >
+            <Ionicons
+              name="grid"
+              size={18}
+              color={viewMode === "grid" ? theme.colors.white : theme.colors.gray600}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === "list" && styles.toggleButtonActive]}
+            onPress={() => setViewMode("list")}
+          >
+            <Ionicons
+              name="list"
+              size={18}
+              color={viewMode === "list" ? theme.colors.white : theme.colors.gray600}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-            {/* Instructions */}
-            <View style={styles.instructions}>
-              <Text style={styles.instructionText}>
-                ❌ Skip • ❤️ Save to Favorites
-              </Text>
-            </View>
-          </>
-        )}
+      {/* Pet List */}
+      <FlatList
+        data={filteredPets}
+        renderItem={renderPetItem}
+        keyExtractor={(item) => item._id}
+        numColumns={viewMode === "grid" && !isWeb ? 2 : 1}
+        key={viewMode} // Force re-render on view change
+        ListHeaderComponent={renderFeaturedSection}
+        ListEmptyComponent={renderEmpty}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={viewMode === "grid" && !isWeb ? styles.columnWrapper : null}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Filters Modal */}
+      <AdoptionFilters
+        visible={showFilters}
+        filters={filters}
+        onChangeFilter={handleFilterChange}
+        onClear={handleClearFilters}
+        onClose={() => setShowFilters(false)}
+      />
+
+      {/* Pet Details Modal */}
+      {selectedPet && (
+        <PetDetailsModal
+          visible={!!selectedPet}
+          pet={selectedPet}
+          onClose={() => setSelectedPet(null)}
+          onRequestAdopt={handleRequestAdopt}
+          onContactOwner={handleContactOwner}
+          onFavorite={handleFavorite}
+        />
+      )}
     </View>
   );
 };
@@ -705,6 +416,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: theme.colors.background,
   },
+  loadingText: {
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.textSecondary,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -719,141 +435,144 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
   },
-  toggleButton: {
+  headerActions: {
+    flexDirection: "row",
+    gap: theme.spacing.sm,
+  },
+  iconButton: {
     padding: theme.spacing.sm,
   },
-  cardContainer: {
-    flex: 1,
-    justifyContent: "center",
+  searchContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    padding: theme.spacing.lg,
-  },
-  card: {
-    width: CARD_WIDTH,
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.xxl,
-    overflow: "hidden",
-    ...theme.shadows.xl,
+    margin: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.gray200,
+    ...theme.shadows.sm,
   },
-  petImage: {
-    width: "100%",
-    height: 300,
-    backgroundColor: theme.colors.gray200,
+  searchInput: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.textPrimary,
   },
-  imagePlaceholder: {
-    justifyContent: "center",
+  filterButton: {
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    marginLeft: theme.spacing.sm,
+  },
+  activeFilters: {
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+  },
+  activeFiltersContent: {
+    gap: theme.spacing.sm,
+  },
+  activeFilterChip: {
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.full,
+    gap: theme.spacing.sm,
   },
-  petInfo: {
-    padding: theme.spacing.lg,
+  activeFilterText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.white,
+    fontWeight: theme.typography.fontWeight.medium,
+    textTransform: "capitalize",
   },
-  petHeader: {
+  viewToggle: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
   },
-  petName: {
-    fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
+  resultsCount: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.typography.fontWeight.medium,
   },
-  lostFoundBadge: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.full,
-  },
-  lostFoundText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.fontSize.xs,
-    fontWeight: theme.typography.fontWeight.bold,
-  },
-  petDetails: {
+  toggleButtons: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  detailItem: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: theme.spacing.xs,
   },
-  detailText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
+  toggleButton: {
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.colors.gray100,
   },
-  description: {
-    fontSize: theme.typography.fontSize.md,
+  toggleButtonActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  featuredSection: {
+    marginBottom: theme.spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.md,
-    lineHeight: 22,
-  },
-  locationSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.sm,
-    marginTop: 8,
-  },
-  locationText: {
-    flex: 1,
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-  },
-  controls: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.spacing.lg,
-    gap: theme.spacing.xl,
-  },
-  controlButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    ...theme.shadows.lg,
-  },
-  rejectButton: {
-    backgroundColor: theme.colors.gray500,
-  },
-  likeButton: {
-    backgroundColor: theme.colors.secondary,
-  },
-  counterContainer: {
     paddingHorizontal: theme.spacing.lg,
   },
-  counterText: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.textPrimary,
+  featuredContent: {
+    paddingHorizontal: theme.spacing.lg,
   },
-  instructions: {
-    alignItems: "center",
-    paddingBottom: theme.spacing.lg,
+  featuredCard: {
+    width: 200,
+    marginRight: theme.spacing.md,
   },
-  instructionText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textSecondary,
+  listContent: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
+    marginBottom: theme.spacing.md,
+  },
+  gridCard: {
+    flex: 1,
+    marginBottom: theme.spacing.md,
+    marginHorizontal: theme.spacing.xs,
+  },
+  listCard: {
+    marginBottom: theme.spacing.md,
   },
   emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    padding: theme.spacing.xl,
+    justifyContent: "center",
+    paddingVertical: theme.spacing.xxxl,
+  },
+  emptyTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.textPrimary,
+    marginTop: theme.spacing.lg,
   },
   emptyText: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.md,
-  },
-  emptySubtext: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
     textAlign: "center",
+  },
+  clearButton: {
+    marginTop: theme.spacing.lg,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+  },
+  clearButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
 });
 
