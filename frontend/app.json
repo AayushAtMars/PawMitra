@@ -21,7 +21,8 @@
                 "NSCameraUsageDescription": "PawMitra needs camera access to capture photos of injured animals for reporting incidents.",
                 "NSPhotoLibraryUsageDescription": "PawMitra needs photo library access to select images for incident reports and pet profiles.",
                 "NSLocationWhenInUseUsageDescription": "PawMitra needs your location to find nearby incidents and volunteers.",
-                "NSLocationAlwaysUsageDescription": "PawMitra needs your location to alert you about nearby animal emergencies even when the app is in the background."
+                "NSLocationAlwaysUsageDescription": "PawMitra needs your location to alert you about nearby animal emergencies even when the app is in the background.",
+                "NSMicrophoneUsageDescription": "PawMitra needs microphone access to allow you to use speech-to-text for reporting incidents and chatting with the AI assistant."
             }
         },
         "android": {
@@ -35,7 +36,8 @@
                 "WRITE_EXTERNAL_STORAGE",
                 "ACCESS_FINE_LOCATION",
                 "ACCESS_COARSE_LOCATION",
-                "INTERNET"
+                "INTERNET",
+                "RECORD_AUDIO"
             ],
             "config": {
                 "googleMaps": {

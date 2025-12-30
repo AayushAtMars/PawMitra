@@ -1,7 +1,8 @@
 import Incident from '../models/Incident.js';
 import User from '../models/User.js';
 import cloudinaryService from '../services/cloudinaryService.js';
-import geminiService from '../services/geminiService.js';
+// import geminiService from '../services/geminiService.js';
+import openAIService from '../services/openaiService.js';
 
 // Create new incident
 export const createIncident = async (req, res) => {
@@ -9,8 +10,8 @@ export const createIncident = async (req, res) => {
     const { location, address, description, imageBase64 } = req.body;
 
     if (!location || !location.coordinates || !imageBase64) {
-      return res.status(400).json({ 
-        error: 'Location and image are required' 
+      return res.status(400).json({
+        error: 'Location and image are required'
       });
     }
 
@@ -23,8 +24,8 @@ export const createIncident = async (req, res) => {
     // Extract base64 data for AI analysis
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
-    // Analyze image with Gemini AI
-    const aiAnalysis = await geminiService.analyzeIncidentImage(base64Data);
+    // Analyze image with AI (Using Groq/OpenAI via openAIService)
+    const aiAnalysis = await openAIService.analyzeIncidentImage(base64Data);
 
     // Create incident
     const incident = await Incident.create({
@@ -198,7 +199,7 @@ export const updateIncidentStatus = async (req, res) => {
     }
 
     incident.status = status;
-    
+
     await incident.addTimelineEntry(
       `Status updated to ${status}`,
       req.user._id,
@@ -265,7 +266,7 @@ export const acceptTask = async (req, res) => {
     });
 
     incident.status = 'volunteer_assigned';
-    
+
     await incident.addTimelineEntry(
       'Volunteer accepted task',
       req.user._id,
@@ -284,10 +285,10 @@ export const acceptTask = async (req, res) => {
       io.to('admin_room').emit('incident_updated', incident);
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       incident,
-      message: 'Task accepted successfully! Good luck helping the animal!' 
+      message: 'Task accepted successfully! Good luck helping the animal!'
     });
   } catch (error) {
     console.error('Accept task error:', error);
@@ -355,7 +356,7 @@ export const resolveIncident = async (req, res) => {
     // Award karma points to volunteer
     const karmaPoints = calculateKarmaPoints(incident);
     const volunteer = await User.findById(req.user._id);
-    
+
     if (volunteer && volunteer.isVolunteer) {
       volunteer.volunteerData.karmaPoints += karmaPoints;
       volunteer.volunteerData.tasksCompleted += 1;
@@ -372,8 +373,8 @@ export const resolveIncident = async (req, res) => {
       });
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       incident,
       karmaEarned: karmaPoints,
       message: `Incident resolved! You earned ${karmaPoints} karma points.`
@@ -387,7 +388,7 @@ export const resolveIncident = async (req, res) => {
 // Calculate karma points based on incident priority and response time
 function calculateKarmaPoints(incident) {
   let basePoints = 10;
-  
+
   // Priority multiplier
   const priorityMultiplier = {
     'critical': 3,
@@ -395,19 +396,19 @@ function calculateKarmaPoints(incident) {
     'medium': 1.5,
     'low': 1
   };
-  
+
   const priority = incident.aiAnalysis?.priority || 'medium';
   basePoints *= priorityMultiplier[priority] || 1;
-  
+
   // Response time bonus (if resolved within 24 hours)
   const reportedTime = new Date(incident.createdAt);
   const resolvedTime = new Date();
   const hoursDiff = (resolvedTime - reportedTime) / (1000 * 60 * 60);
-  
+
   if (hoursDiff <= 24) {
     basePoints += 5; // Quick response bonus
   }
-  
+
   return Math.round(basePoints);
 }
 
@@ -442,7 +443,7 @@ export const assignVolunteer = async (req, res) => {
     });
 
     incident.status = 'volunteer_assigned';
-    
+
     await incident.addTimelineEntry(
       'Volunteer assigned',
       req.user._id,

@@ -17,6 +17,7 @@ import setupSocketIO from './sockets/index.js';
 
 // Import services
 import geminiService from './services/geminiService.js';
+import openAIService from './services/openaiService.js';
 import cloudinaryService from './services/cloudinaryService.js';
 
 // Import routes
@@ -26,6 +27,8 @@ import volunteerRoutes from './routes/volunteers.js';
 import petRoutes from './routes/pets.js';
 import marketplaceRoutes from './routes/marketplace.js';
 import userRoutes from "./routes/userRoutes.js";
+import chatRoutes from './routes/chat.js';
+
 // Load environment variables
 dotenv.config();
 console.log('JWT_SECRET loaded:', process.env.JWT_SECRET ? 'YES' : 'NO');
@@ -50,6 +53,7 @@ connectDB();
 
 // Initialize services
 geminiService.initialize();
+openAIService.initialize();
 cloudinaryService.initialize();
 
 // Middleware
@@ -82,6 +86,8 @@ app.use('/api/volunteers', volunteerRoutes);
 app.use('/api/pets', petRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use("/api/user", userRoutes);
+app.use('/api/chat', chatRoutes);
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
@@ -103,7 +109,8 @@ app.get('/', (req, res) => {
       incidents: '/api/incidents',
       volunteers: '/api/volunteers',
       pets: '/api/pets',
-      marketplace: '/api/marketplace'
+      marketplace: '/api/marketplace',
+      chat: '/api/chat'
     }
   });
 });
@@ -119,7 +126,7 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  
+
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
@@ -146,6 +153,7 @@ httpServer.listen(PORT, () => {
 ║  • Volunteers:  /api/volunteers                      ║
 ║  • Pets:        /api/pets                            ║
 ║  • Marketplace: /api/marketplace                     ║
+║  • Chat:        /api/chat                            ║
 ║                                                       ║
 ║  Socket.IO: Connected ✅                              ║
 ║                                                       ║

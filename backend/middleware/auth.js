@@ -4,18 +4,18 @@
 // // Middleware to verify JWT token
 // export const authenticate = (req, res, next) => {
 //   console.log('Auth middleware - Headers:', req.headers.authorization);
-  
+
 //   passport.authenticate('jwt', { session: false }, (err, user, info) => {
 //     if (err) {
 //       console.error('Auth error:', err);
 //       return res.status(500).json({ error: 'Authentication error' });
 //     }
-    
+
 //     if (!user) {
 //       console.log('No user found. Info:', info);
 //       return res.status(401).json({ error: 'Unauthorized. Please login.' });
 //     }
-    
+
 //     console.log('User authenticated:', user.email);
 //     req.user = user;
 //     next();
@@ -28,13 +28,13 @@
 //     if (!req.user) {
 //       return res.status(401).json({ error: 'Unauthorized' });
 //     }
-    
+
 //     if (!roles.includes(req.user.role)) {
 //       return res.status(403).json({ 
 //         error: 'Forbidden. You do not have permission to access this resource.' 
 //       });
 //     }
-    
+
 //     next();
 //   };
 // };
@@ -44,13 +44,13 @@
 //   if (!req.user) {
 //     return res.status(401).json({ error: 'Unauthorized' });
 //   }
-  
+
 //   if (!req.user.isVolunteer && req.user.role !== 'volunteer') {
 //     return res.status(403).json({ 
 //       error: 'This feature is only available for volunteers.' 
 //     });
 //   }
-  
+
 //   next();
 // };
 
@@ -133,7 +133,7 @@ export const isVolunteer = (req, res, next) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  if (!req.user.isVolunteer && req.user.role !== "volunteer") {
+  if (!req.user.isVolunteer && req.user.role !== "volunteer" && req.user.role !== "admin") {
     return res.status(403).json({
       error: "This feature is only available for volunteers.",
     });

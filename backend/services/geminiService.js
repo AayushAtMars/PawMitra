@@ -4,6 +4,7 @@ class GeminiService {
   constructor() {
     this.genAI = null;
     this.model = null;
+    this.chatSession = null;
   }
 
   initialize() {
@@ -11,10 +12,64 @@ class GeminiService {
       console.warn('⚠️  GEMINI_API_KEY not found. AI features will be disabled.');
       return;
     }
-    
+
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-    console.log('✅ Gemini AI service initialized');
+    // Use gemini-1.5-flash for better availability and speed
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    console.log('✅ Gemini AI service initialized (gemini-1.5-flash)');
+  }
+
+  async chat(message, history = []) {
+    if (!this.model) {
+      return "I'm sorry, but I'm currently offline. Please try again later.";
+    }
+
+    try {
+      // Initialize chat session if needed or with provided history
+      // Note: For a stateless REST API, we typically recreate the chat session with history for each request
+      // unless we store state in the service (which is single instance). 
+      // Better to start fresh with history for each request to handle multiple users.
+      const chat = this.model.startChat({
+        history: history.map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.message }]
+        })),
+        generationConfig: {
+          maxOutputTokens: 500,
+        },
+      });
+
+      const result = await chat.sendMessage(message);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error('Error in Gemini chat:', error);
+      return "I'm having trouble understanding right now. Please try again.";
+    }
+  }
+
+  async transcribeAudio(audioBuffer, mimeType) {
+    if (!this.model) {
+      throw new Error('Gemini service not initialized');
+    }
+
+    try {
+      const prompt = "Transcribe the following audio exactly as spoken. Return only the transcription text.";
+
+      const audioPart = {
+        inlineData: {
+          data: audioBuffer.toString('base64'),
+          mimeType: mimeType
+        }
+      };
+
+      const result = await this.model.generateContent([prompt, audioPart]);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (error) {
+      console.error('Error transcribing audio with Gemini:', error);
+      throw new Error('Failed to transcribe audio');
+    }
   }
 
   async analyzeIncidentImage(imageBase64) {
@@ -59,18 +114,29 @@ Respond in JSON format:
 
       const result = await this.model.generateContent([prompt, imagePart]);
       const response = await result.response;
-      const text = response.text();
-      
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const analysis = JSON.parse(jsonMatch[0]);
-        return {
-          ...analysis,
-          analyzedAt: new Date()
-        };
+      let text = response.text();
+
+      // Clean markdown code blocks
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      // Extract JSON from response if still mixed with text
+      const jsonStart = text.indexOf('{');
+      const jsonEnd = text.lastIndexOf('}');
+
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        text = text.substring(jsonStart, jsonEnd + 1);
+        try {
+          const analysis = JSON.parse(text);
+          return {
+            ...analysis,
+            analyzedAt: new Date()
+          };
+        } catch (e) {
+          console.error("JSON parse error", e);
+          // Fallthrough to mock
+        }
       }
-      
+
       return this.getMockAnalysis();
     } catch (error) {
       console.error('Error analyzing image with Gemini:', error);
@@ -104,13 +170,23 @@ Respond in JSON format:
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
-      const text = response.text();
-      
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+      let text = response.text();
+
+      // Clean markdown code blocks
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      const jsonStart = text.indexOf('{');
+      const jsonEnd = text.lastIndexOf('}');
+
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        text = text.substring(jsonStart, jsonEnd + 1);
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error("JSON parse error", e);
+        }
       }
-      
+
       return this.getMockFirstAid();
     } catch (error) {
       console.error('Error generating first aid guidance:', error);

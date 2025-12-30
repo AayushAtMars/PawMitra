@@ -7,11 +7,11 @@ export const registerVolunteer = async (req, res) => {
     const { serviceRadius, location } = req.body;
 
     const user = await User.findById(req.user._id);
-    
+
     user.isVolunteer = true;
     user.volunteerData.serviceRadius = serviceRadius || 2000;
     user.volunteerData.availability = true;
-    
+
     if (location) {
       user.location = location;
     }
@@ -48,11 +48,11 @@ export const updateVolunteerProfile = async (req, res) => {
     if (serviceRadius !== undefined) {
       user.volunteerData.serviceRadius = serviceRadius;
     }
-    
+
     if (availability !== undefined) {
       user.volunteerData.availability = availability;
     }
-    
+
     if (location) {
       user.location = location;
     }
@@ -112,7 +112,7 @@ export const acceptTask = async (req, res) => {
     const { incidentId } = req.body;
 
     const incident = await Incident.findById(incidentId);
-    
+
     if (!incident) {
       return res.status(404).json({ error: 'Incident not found' });
     }
@@ -128,9 +128,9 @@ export const acceptTask = async (req, res) => {
 
     assignment.status = 'accepted';
     assignment.acceptedAt = new Date();
-    
+
     incident.status = 'in_progress';
-    
+
     await incident.addTimelineEntry(
       'Volunteer accepted task',
       req.user._id
@@ -164,7 +164,7 @@ export const completeTask = async (req, res) => {
     const { incidentId, notes, outcome } = req.body;
 
     const incident = await Incident.findById(incidentId);
-    
+
     if (!incident) {
       return res.status(404).json({ error: 'Incident not found' });
     }
@@ -179,7 +179,7 @@ export const completeTask = async (req, res) => {
     }
 
     assignment.status = 'completed';
-    
+
     await incident.addTimelineEntry(
       'Volunteer completed task',
       req.user._id,
@@ -188,9 +188,9 @@ export const completeTask = async (req, res) => {
 
     // Award karma points
     const user = await User.findById(req.user._id);
-    const karmaPoints = incident.aiAnalysis.priority === 'high' ? 15 : 
-                        incident.aiAnalysis.priority === 'medium' ? 10 : 5;
-    
+    const karmaPoints = incident.aiAnalysis.priority === 'high' ? 15 :
+      incident.aiAnalysis.priority === 'medium' ? 10 : 5;
+
     await user.addKarmaPoints(karmaPoints);
     user.volunteerData.tasksCompleted += 1;
     await user.save();
@@ -251,6 +251,22 @@ export const getVolunteerStats = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
+    // Admin Level Stats
+    if (user.role === 'admin') {
+      const totalVolunteers = await User.countDocuments({ isVolunteer: true });
+      const activeVolunteers = await User.countDocuments({
+        isVolunteer: true,
+        'volunteerData.availability': true
+      });
+
+      return res.json({
+        success: true,
+        activeVolunteers,
+        totalVolunteers
+      });
+    }
+
+    // Volunteer Personal Stats
     if (!user.isVolunteer) {
       return res.status(400).json({ error: 'User is not a volunteer' });
     }
@@ -264,21 +280,21 @@ export const getVolunteerStats = async (req, res) => {
       karmaPoints: user.volunteerData.karmaPoints,
       tasksCompleted: user.volunteerData.tasksCompleted,
       badges: user.volunteerData.badges,
-      activeTasks: assignedIncidents.filter(i => 
-        i.assignedVolunteers.some(av => 
-          av.volunteer.toString() === req.user._id.toString() && 
+      activeTasks: assignedIncidents.filter(i =>
+        i.assignedVolunteers.some(av =>
+          av.volunteer.toString() === req.user._id.toString() &&
           av.status === 'accepted'
         )
       ).length,
-      pendingTasks: assignedIncidents.filter(i => 
-        i.assignedVolunteers.some(av => 
-          av.volunteer.toString() === req.user._id.toString() && 
+      pendingTasks: assignedIncidents.filter(i =>
+        i.assignedVolunteers.some(av =>
+          av.volunteer.toString() === req.user._id.toString() &&
           av.status === 'pending'
         )
       ).length,
-      completedTasks: assignedIncidents.filter(i => 
-        i.assignedVolunteers.some(av => 
-          av.volunteer.toString() === req.user._id.toString() && 
+      completedTasks: assignedIncidents.filter(i =>
+        i.assignedVolunteers.some(av =>
+          av.volunteer.toString() === req.user._id.toString() &&
           av.status === 'completed'
         )
       ).length

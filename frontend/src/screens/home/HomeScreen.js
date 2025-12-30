@@ -21,6 +21,7 @@ import HomeHero from '../../components/HomeHero';
 import PetCard from '../../components/PetCard';
 import ServiceCard from '../../components/ServiceCard';
 import FloatingReportButton from '../../components/FloatingReportButton';
+import FloatingChatButton from '../../components/FloatingChatButton';
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -42,7 +43,7 @@ const HomeScreen = ({ navigation }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch statistics and recent data
       const [incidentsRes, petsRes, volunteersRes] = await Promise.all([
         incidentsAPI.getAll({ limit: 5 }),
@@ -111,12 +112,12 @@ const HomeScreen = ({ navigation }) => {
       onPress={() => navigation.navigate('IncidentDetails', { incidentId: incident._id })}
       activeOpacity={0.8}
     >
-      <View style={[styles.priorityBadge, { 
+      <View style={[styles.priorityBadge, {
         backgroundColor: incident.aiAnalysis?.priority === 'high' || incident.aiAnalysis?.priority === 'critical'
-          ? theme.colors.error 
+          ? theme.colors.error
           : incident.aiAnalysis?.priority === 'medium'
-          ? theme.colors.warning
-          : theme.colors.success
+            ? theme.colors.warning
+            : theme.colors.success
       }]}>
         <Text style={styles.priorityText}>
           {String(incident.aiAnalysis?.priority || 'MEDIUM').toUpperCase()}
@@ -162,7 +163,7 @@ const HomeScreen = ({ navigation }) => {
           onReportPress={() => navigation.navigate('Report')}
           onAdoptPress={() => navigation.navigate('Adoption')}
           onMarketplacePress={() => navigation.navigate('Marketplace')}
-          onVolunteerPress={() => user?.isVolunteer 
+          onVolunteerPress={() => user?.isVolunteer
             ? navigation.navigate('Volunteer')
             : navigation.navigate('Profile')}
         />
@@ -252,7 +253,8 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Floating Report Button */}
+      {/* Floating Buttons */}
+      <FloatingChatButton onPress={() => navigation.navigate('Chat')} />
       <FloatingReportButton onPress={() => navigation.navigate('Report')} />
     </View>
   );

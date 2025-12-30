@@ -3,6 +3,8 @@ import passport from 'passport';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import { generateToken, authenticate } from '../middleware/auth.js';
+import { uploadSingle, handleUploadError } from '../middleware/upload.js';
+import cloudinaryService from '../services/cloudinaryService.js';
 
 const router = express.Router();
 
@@ -137,20 +139,46 @@ router.get('/me', authenticate, async (req, res) => {
 // @route   PUT /api/auth/profile
 // @desc    Update user profile
 // @access  Private
-router.put('/profile', authenticate, async (req, res) => {
+router.put('/profile', authenticate, uploadSingle, handleUploadError, async (req, res) => {
   try {
-    const { name, phone, avatar, location, address, volunteerData } = req.body;
+    const { name, phone, location, address, volunteerData } = req.body;
+    let avatar = req.body.avatar; // In case it's passed as a string (rare)
 
     const user = await User.findById(req.user._id);
+
+    // Handle file upload
+    if (req.file) {
+      try {
+        const result = await cloudinaryService.uploadImage(req.file.buffer, 'avatars');
+        avatar = result.url;
+      } catch (uploadError) {
+        console.error('Image upload failed:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload profile image' });
+      }
+    }
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (avatar) user.avatar = avatar;
-    if (location) user.location = location;
+
+    // Parse location if it comes as stringified JSON from FormData
+    if (location) {
+      try {
+        user.location = typeof location === 'string' ? JSON.parse(location) : location;
+      } catch (e) {
+        console.error('Error parsing location:', e);
+      }
+    }
+
     if (address) user.address = address;
-    
+
+    // Handle volunteerData (might need parsing if sending as JSON string in FormData)
     if (user.isVolunteer && volunteerData) {
-      user.volunteerData = { ...user.volunteerData, ...volunteerData };
+      let vData = volunteerData;
+      if (typeof volunteerData === 'string') {
+        try { vData = JSON.parse(volunteerData); } catch (e) { }
+      }
+      user.volunteerData = { ...user.volunteerData, ...vData };
     }
 
     await user.save();
@@ -179,9 +207,9 @@ router.put('/profile', authenticate, async (req, res) => {
 // @access  Public
 router.get(
   '/google',
-  passport.authenticate('google', { 
+  passport.authenticate('google', {
     scope: ['profile', 'email'],
-    session: false 
+    session: false
   })
 );
 
@@ -203,9 +231,9 @@ router.get(
 // @access  Public
 router.get(
   '/facebook',
-  passport.authenticate('facebook', { 
+  passport.authenticate('facebook', {
     scope: ['email'],
-    session: false 
+    session: false
   })
 );
 
