@@ -251,8 +251,8 @@ export const getVolunteerStats = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    // Admin Level Stats
-    if (user.role === 'admin') {
+    // Admin or NGO Level Stats
+    if (user.role === 'admin' || user.role === 'ngo') {
       const totalVolunteers = await User.countDocuments({ isVolunteer: true });
       const activeVolunteers = await User.countDocuments({
         isVolunteer: true,

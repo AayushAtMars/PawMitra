@@ -6,7 +6,8 @@ import {
   getPet,
   expressInterest,
   reportLostFound,
-  getLostFoundPets
+  getLostFoundPets,
+  getPetStats
 } from '../controllers/petController.js';
 
 const router = express.Router();
@@ -25,6 +26,11 @@ router.get('/', getPets);
 // @desc    Get lost/found pets
 // @access  Public
 router.get('/lost-found', getLostFoundPets);
+
+// @route   GET /api/pets/stats
+// @desc    Get pet statistics
+// @access  Public
+router.get('/stats', getPetStats);
 
 // @route   GET /api/pets/:id
 // @desc    Get single pet

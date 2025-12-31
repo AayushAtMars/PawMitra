@@ -45,6 +45,6 @@ router.get('/leaderboard', getLeaderboard);
 // @route   GET /api/volunteers/stats
 // @desc    Get volunteer statistics
 // @access  Private (Volunteer only)
-router.get('/stats', authenticate, isVolunteer, getVolunteerStats);
+router.get('/stats', authenticate, getVolunteerStats);
 
 export default router;

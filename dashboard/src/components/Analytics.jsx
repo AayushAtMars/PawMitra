@@ -1,31 +1,7 @@
 import React from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const Analytics = () => {
-  // Mock data - replace with real API data
-  const incidentTrendData = [
-    { month: 'Jan', incidents: 45, resolved: 38 },
-    { month: 'Feb', incidents: 52, resolved: 45 },
-    { month: 'Mar', incidents: 48, resolved: 42 },
-    { month: 'Apr', incidents: 61, resolved: 55 },
-    { month: 'May', incidents: 55, resolved: 50 },
-    { month: 'Jun', incidents: 67, resolved: 60 },
-  ];
-
-  const priorityData = [
-    { name: 'High', value: 30, color: '#ef4444' },
-    { name: 'Medium', value: 45, color: '#f59e0b' },
-    { name: 'Low', value: 25, color: '#10b981' },
-  ];
-
-  const adoptionData = [
-    { month: 'Jan', adopted: 12 },
-    { month: 'Feb', adopted: 15 },
-    { month: 'Mar', adopted: 18 },
-    { month: 'Apr', adopted: 22 },
-    { month: 'May', adopted: 20 },
-    { month: 'Jun', adopted: 25 },
-  ];
+const Analytics = ({ trendData = [], priorityData = [], adoptionData = [] }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -33,7 +9,7 @@ const Analytics = () => {
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold mb-4">Incident Trends</h3>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={incidentTrendData}>
+          <LineChart data={trendData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />

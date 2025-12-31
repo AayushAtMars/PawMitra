@@ -108,7 +108,13 @@ export const getIncidents = async (req, res) => {
     const { status, priority, category, limit = 50, page = 1 } = req.query;
 
     const query = {};
-    if (status) query.status = status;
+    if (status) {
+      if (status === 'active') {
+        query.status = { $ne: 'resolved' };
+      } else {
+        query.status = status;
+      }
+    }
     if (priority) query['aiAnalysis.priority'] = priority;
     if (category) query['aiAnalysis.category'] = category;
 
@@ -469,5 +475,88 @@ export const assignVolunteer = async (req, res) => {
   } catch (error) {
     console.error('Assign volunteer error:', error);
     res.status(500).json({ error: 'Failed to assign volunteer' });
+  }
+};
+// Get incident statistics for dashboard
+export const getIncidentStats = async (req, res) => {
+  try {
+    // 1. Overall Counts
+    const total = await Incident.countDocuments();
+    const resolved = await Incident.countDocuments({ status: 'resolved' });
+    const active = await Incident.countDocuments({ status: { $ne: 'resolved' } });
+
+    // 2. Trend Data (Last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1); // Start of month
+
+    const trends = await Incident.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sixMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" }
+          },
+          incidents: { $sum: 1 },
+          resolved: {
+            $sum: { $cond: [{ $eq: ["$status", "resolved"] }, 1, 0] }
+          }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+
+    // Format trends for frontend (Jan, Feb, etc.)
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const formattedTrends = trends.map(t => ({
+      month: monthNames[t._id.month - 1],
+      incidents: t.incidents,
+      resolved: t.resolved
+    }));
+
+    // 3. Priority Distribution
+    const priorityStats = await Incident.aggregate([
+      {
+        $group: {
+          _id: "$aiAnalysis.priority",
+          value: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const priorityColors = {
+      'critical': '#ef4444',
+      'high': '#f97316',
+      'medium': '#f59e0b',
+      'low': '#10b981'
+    };
+
+    const formattedPriority = priorityStats
+      .filter(p => p._id) // Filter out null priorities if any
+      .map(p => ({
+        name: p._id.charAt(0).toUpperCase() + p._id.slice(1),
+        value: p.value,
+        color: priorityColors[p._id] || '#6b7280'
+      }));
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        active,
+        resolved,
+        trends: formattedTrends,
+        priority: formattedPriority
+      }
+    });
+
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch incident stats' });
   }
 };

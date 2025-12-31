@@ -22,10 +22,10 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-    
+
     // Initialize Socket Connection
     const socket = initSocket();
-    
+
     // Listen for new incidents
     socket.on('new_incident', (incident) => {
       console.log('New incident received:', incident);
@@ -56,22 +56,34 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [incidentsRes, petsRes, volunteersRes] = await Promise.all([
-        incidentsAPI.getAll({ limit: 10 }),
+      const results = await Promise.allSettled([
+        incidentsAPI.getAll({ status: 'active', limit: 10 }),
         petsAPI.getAll({ limit: 5 }),
         volunteersAPI.getStats(),
+        incidentsAPI.getStats()
       ]);
 
-      const incidentsData = incidentsRes.data.incidents || [];
+      const [incidentsRes, petsRes, volunteersRes, statsRes] = results;
+
+      // Helper to safely get data
+      const getData = (result) => result.status === 'fulfilled' ? result.value.data : {};
+
+      const incidentsData = getData(incidentsRes).incidents || [];
+      const statsData = getData(statsRes).stats || {};
+      const petsData = getData(petsRes).pets || [];
+      const volunteersData = getData(volunteersRes);
+
       setIncidents(incidentsData);
 
       setStats({
-        totalIncidents: incidentsData.length,
-        activeIncidents: incidentsData.filter(i => i.status === 'reported' || i.status === 'assigned').length,
-        resolvedIncidents: incidentsData.filter(i => i.status === 'resolved').length,
-        totalPets: petsRes.data.pets?.length || 0,
-        adoptedPets: petsRes.data.pets?.filter(p => p.status === 'adopted').length || 0,
-        activeVolunteers: volunteersRes.data.activeVolunteers || 0,
+        totalIncidents: statsData.total || 0,
+        activeIncidents: statsData.active || 0,
+        resolvedIncidents: statsData.resolved || 0,
+        totalPets: petsData.length || 0,
+        adoptedPets: petsData.filter(p => p.status === 'adopted').length || 0,
+        activeVolunteers: volunteersData.activeVolunteers || 0,
+        trends: statsData.trends || [],
+        priority: statsData.priority || []
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -178,7 +190,7 @@ const AdminDashboard = () => {
         {/* Analytics */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4">Analytics Overview</h2>
-          <Analytics />
+          <Analytics trendData={stats.trends} priorityData={stats.priority} />
         </div>
       </main>
     </div>

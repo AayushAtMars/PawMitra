@@ -8,10 +8,16 @@ import {
   updateIncidentStatus,
   resolveIncident,
   acceptTask,
-  assignVolunteer
+  assignVolunteer,
+  getIncidentStats
 } from '../controllers/incidentController.js';
 
 const router = express.Router();
+
+// @route   GET /api/incidents/stats
+// @desc    Get incident statistics
+// @access  Private
+router.get('/stats', authenticate, getIncidentStats);
 
 // @route   POST /api/incidents
 // @desc    Create new incident

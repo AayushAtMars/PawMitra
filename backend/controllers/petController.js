@@ -27,7 +27,7 @@ export const addPet = async (req, res) => {
       for (let i = 0; i < photos.length; i++) {
         // Handle both object { url: 'base64...' } and string 'base64...' formats
         const photoData = typeof photos[i] === 'object' ? photos[i].url : photos[i];
-        
+
         const uploaded = await cloudinaryService.uploadBase64Image(
           photoData,
           'pawmitra/pets'
@@ -265,5 +265,35 @@ export const getLostFoundPets = async (req, res) => {
   } catch (error) {
     console.error('Get lost/found pets error:', error);
     res.status(500).json({ error: 'Failed to fetch lost/found pets' });
+  }
+};
+// Get pet statistics
+export const getPetStats = async (req, res) => {
+  try {
+    const total = await Pet.countDocuments({ isLostFound: false });
+    const adopted = await Pet.countDocuments({ status: 'adopted', isLostFound: false });
+    const available = await Pet.countDocuments({ status: 'available', isLostFound: false });
+
+    // Recent activity (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const newListings = await Pet.countDocuments({
+      createdAt: { $gte: thirtyDaysAgo },
+      isLostFound: false
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        adopted,
+        available,
+        newListings
+      }
+    });
+  } catch (error) {
+    console.error('Get pet stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch pet stats' });
   }
 };
