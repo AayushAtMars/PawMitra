@@ -69,6 +69,7 @@ class GeminiService {
     } catch (error) {
       console.error('Error transcribing audio with Gemini:', error);
       throw new Error('Failed to transcribe audio');
+
     }
   }
 

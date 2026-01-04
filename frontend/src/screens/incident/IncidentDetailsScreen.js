@@ -157,6 +157,8 @@ const IncidentDetailsScreen = ({ route, navigation }) => {
         </View>
       )}
 
+
+
       {/* Reporter Info */}
       {incident.reportedBy && (
         <View style={styles.section}>

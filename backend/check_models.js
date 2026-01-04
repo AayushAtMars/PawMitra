@@ -1,33 +1,21 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import Incident from './models/Incident.js';
+
 dotenv.config();
 
-async function listModels() {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Dummy init to get client
-        // Accessing internal client or using direct method if available, 
-        // but the SDK structure changed. 
-        // Actually, checking docs, specific list method might handle this or we just try a few.
+// Connect to DB (mock connection not needed for schema check, but we need to load the model)
+// Actually we can just check the schema paths directly
+async function checkSchema() {
+    console.log("Checking Incident Schema paths...");
+    const paths = Incident.schema.paths;
 
-        // Better approach: verify specific common models
-        const modelsToTest = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro', 'gemini-1.0-pro'];
-
-        console.log("Testing model availability...");
-
-        for (const modelName of modelsToTest) {
-            try {
-                const model = genAI.getGenerativeModel({ model: modelName });
-                const result = await model.generateContent("Hello");
-                console.log(`✅ ${modelName} is WORKING`);
-            } catch (error) {
-                console.log(`❌ ${modelName} failed: ${error.message.split('\n')[0]}`);
-            }
-        }
-
-    } catch (error) {
-        console.error("Error:", error);
+    if (paths['aiAnalysis.suggestedProviders.name'] || paths['aiAnalysis.suggestedProviders']) {
+        console.log("✅ 'aiAnalysis.suggestedProviders' found in schema!");
+    } else {
+        console.error("❌ 'aiAnalysis.suggestedProviders' NOT found in schema.");
+        console.log("Available paths under aiAnalysis:", Object.keys(paths).filter(p => p.startsWith('aiAnalysis')));
     }
 }
 
-listModels();
+checkSchema();

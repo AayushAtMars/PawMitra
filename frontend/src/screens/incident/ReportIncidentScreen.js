@@ -52,7 +52,7 @@ const ReportIncidentScreen = ({ navigation }) => {
     const result = await getCurrentLocation();
     if (result.success) {
       setLocation(result.location);
-      
+
       // Get address
       const addressResult = await reverseGeocode(
         result.location.latitude,
@@ -129,7 +129,7 @@ const ReportIncidentScreen = ({ navigation }) => {
 
     try {
       const finalAddress = useManualLocation ? manualAddress : address;
-      
+
       const response = await incidentsAPI.create({
         location: {
           type: 'Point',
@@ -220,7 +220,7 @@ const ReportIncidentScreen = ({ navigation }) => {
               {useManualLocation ? manualAddress : (address || 'Getting address...')}
             </Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.editLocationButton}
             onPress={() => setShowLocationModal(true)}
           >
@@ -233,7 +233,7 @@ const ReportIncidentScreen = ({ navigation }) => {
       {photo ? (
         <View style={styles.photoContainer}>
           <Image source={{ uri: photo.uri }} style={styles.photo} />
-          
+
           {analyzing && (
             <View style={styles.analyzingOverlay}>
               <ActivityIndicator size="large" color={theme.colors.white} />
@@ -279,11 +279,13 @@ const ReportIncidentScreen = ({ navigation }) => {
                   ))}
                 </View>
               )}
+
+
             </View>
           )}
 
-          <TouchableOpacity 
-            style={styles.submitButton} 
+          <TouchableOpacity
+            style={styles.submitButton}
             onPress={submitReport}
             disabled={analyzing}
           >
@@ -338,7 +340,7 @@ const ReportIncidentScreen = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Location</Text>
-            
+
             <View style={styles.locationToggle}>
               <TouchableOpacity
                 style={[styles.toggleButton, !useManualLocation && styles.toggleButtonActive]}

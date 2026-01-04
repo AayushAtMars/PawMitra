@@ -1,15 +1,21 @@
-import geminiService from '../services/openaiService.js'; // Renaming import to minimize changes, or better:
 import openAIService from '../services/openaiService.js';
+
 
 export const sendMessage = async (req, res) => {
     try {
-        const { message, history } = req.body;
+        const { message, history, location } = req.body;
 
         if (!message) {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        const response = await openAIService.chat(message, history || []);
+        let contextMessage = message;
+
+        // If location provided and user asks for services/doctors, fetch and append context
+        // (Removed as per revert request)
+
+
+        const response = await openAIService.chat(contextMessage, history || []);
         res.json({ response });
     } catch (error) {
         console.error('Chat error:', error);

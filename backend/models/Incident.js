@@ -7,7 +7,7 @@ const incidentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  
+
   // Location
   location: {
     type: {
@@ -25,7 +25,7 @@ const incidentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
+
   // Incident details
   photos: [{
     url: String,
@@ -35,12 +35,12 @@ const incidentSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  
+
   description: {
     type: String,
     default: ''
   },
-  
+
   // AI Analysis Results
   aiAnalysis: {
     category: {
@@ -63,14 +63,14 @@ const incidentSchema = new mongoose.Schema({
     safetyWarnings: [String],
     analyzedAt: Date
   },
-  
+
   // Status tracking
   status: {
     type: String,
     enum: ['reported', 'volunteer_assigned', 'ngo_assigned', 'in_progress', 'resolved', 'closed'],
     default: 'reported'
   },
-  
+
   // Assignment
   assignedVolunteers: [{
     volunteer: {
@@ -85,12 +85,12 @@ const incidentSchema = new mongoose.Schema({
       default: 'pending'
     }
   }],
-  
+
   assignedNGO: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  
+
   // Timeline
   timeline: [{
     action: String,
@@ -104,7 +104,7 @@ const incidentSchema = new mongoose.Schema({
     },
     notes: String
   }],
-  
+
   // Resolution
   resolvedAt: Date,
   resolutionNotes: String,
@@ -122,7 +122,7 @@ incidentSchema.index({ status: 1, createdAt: -1 });
 incidentSchema.index({ 'aiAnalysis.priority': 1 });
 
 // Method to add timeline entry
-incidentSchema.methods.addTimelineEntry = function(action, userId, notes = '') {
+incidentSchema.methods.addTimelineEntry = function (action, userId, notes = '') {
   this.timeline.push({
     action,
     performedBy: userId,
