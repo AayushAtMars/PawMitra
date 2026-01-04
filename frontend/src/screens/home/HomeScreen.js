@@ -293,9 +293,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontSize: 22,
+    fontWeight: '700',
     color: theme.colors.textPrimary,
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing.sm,
   },
   seeAll: {
     fontSize: theme.typography.fontSize.sm,

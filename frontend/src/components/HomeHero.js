@@ -47,9 +47,9 @@ const HomeHero = ({
       <TouchableOpacity 
         style={styles.primaryCTA}
         onPress={onReportPress}
-        activeOpacity={0.85}
+        activeOpacity={0.9}
       >
-        <View style={styles.ctaContent}>
+        {/* <View style={styles.ctaContent}>
           <View style={styles.ctaIcon}>
             <Ionicons name="camera" size={32} color={theme.colors.white} />
           </View>
@@ -59,7 +59,18 @@ const HomeHero = ({
           </View>
           <Ionicons name="arrow-forward" size={24} color={theme.colors.white} />
         </View>
+      </TouchableOpacity> */}
+
+      <View style={styles.ctaContent}>
+          {/* Centered Camera Icon */}
+          <Ionicons name="camera" size={42} color="#FFFFFF" style={styles.ctaIcon} />
+          {/* Centered Title */}
+          <Text style={styles.ctaTitle}>Report an Animal</Text>
+        </View>
+        {/* Decorative subtle overlay for depth */}
+        <View style={styles.ctaDecoration} />
       </TouchableOpacity>
+    
 
       {/* Quick Actions Grid */}
       <View style={styles.quickActions}>
@@ -102,39 +113,83 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
   },
+  // primaryCTA: {
+  //   backgroundColor: theme.colors.error,
+  //   borderRadius: theme.borderRadius.lg,
+  //   padding: theme.spacing.lg,
+  //   marginBottom: theme.spacing.lg,
+  //   ...theme.shadows.md,
+  // },
+  // ctaContent: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   gap: theme.spacing.md,
+  // },
+  // ctaIcon: {
+  //   width: 56,
+  //   height: 56,
+  //   borderRadius: theme.borderRadius.md,
+  //   backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
+  // ctaText: {
+  //   flex: 1,
+  // },
+  // ctaTitle: {
+  //   fontSize: theme.typography.fontSize.lg,
+  //   fontWeight: theme.typography.fontWeight.bold,
+  //   color: theme.colors.white,
+  //   marginBottom: theme.spacing.xs,
+  // },
+  // ctaSubtitle: {
+  //   fontSize: theme.typography.fontSize.sm,
+  //   color: 'rgba(255, 255, 255, 0.9)',
+  // },
+
+// --- UPDATED PRIMARY CTA STYLES ---
   primaryCTA: {
-    backgroundColor: theme.colors.error,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.md,
-  },
-  ctaContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  ctaIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#5F8D75', // Sage Green matching the image
+    borderRadius: 20,
+    height: 140, // Taller, card-like height
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#5F8D75',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  ctaText: {
-    flex: 1,
+  ctaContent: {
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  ctaIcon: {
+    marginBottom: 8,
   },
   ctaTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.white,
-    marginBottom: theme.spacing.xs,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
-  ctaSubtitle: {
-    fontSize: theme.typography.fontSize.sm,
-    color: 'rgba(255, 255, 255, 0.9)',
+  ctaDecoration: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Subtle circle overlay
+    zIndex: 1,
   },
+  // ----------------------------------
+
+
+
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
