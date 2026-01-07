@@ -796,16 +796,7 @@ const ProfileScreen = ({ navigation }) => {
       icon: "help-circle-outline",
       onPress: () => navigation.navigate("HelpSupport"),
     },
-    {
-      id: 10,
-      title: "About",
-      icon: "information-circle-outline",
-      onPress: () =>
-        Alert.alert(
-          "About PawMitra",
-          "PawMitra is a hyperlocal smart network for animal welfare.\n\nVersion 1.0.0\n\nMaking a difference, one paw at a time 🐾",
-        ),
-    },
+   
   ];
 
   return (
