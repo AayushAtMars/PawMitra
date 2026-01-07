@@ -789,12 +789,7 @@ const ProfileScreen = ({ navigation }) => {
       icon: "business-outline",
       onPress: () => navigation.navigate("RegisterService"),
     },
-    {
-      id: 8,
-      title: "Settings",
-      icon: "settings-outline",
-      onPress: () => navigation.navigate("Settings"),
-    },
+    
     {
       id: 9,
       title: "Help & Support",
