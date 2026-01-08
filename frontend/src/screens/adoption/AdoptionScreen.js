@@ -8,6 +8,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -119,7 +120,7 @@ const AdoptionScreen = ({ navigation }) => {
 
     // Vaccinated filter
     if (filters.vaccinated === "yes") {
-      filtered = filtered.filter((p) => 
+      filtered = filtered.filter((p) =>
         p.healthStatus?.toLowerCase().includes("vaccinated")
       );
     }
@@ -408,62 +409,75 @@ const AdoptionScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: "#FFF8F0", // Updated to match Login/Register
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: theme.colors.background,
+    backgroundColor: "#FFF8F0",
   },
   loadingText: {
     marginTop: theme.spacing.md,
     fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textSecondary,
+    color: "#888",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: theme.spacing.lg,
-    backgroundColor: theme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.gray200,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    backgroundColor: "transparent",
   },
   title: {
-    fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
+    fontSize: 24,
+    fontWeight: "900",
+    color: "#2D2D2D",
   },
   headerActions: {
     flexDirection: "row",
     gap: theme.spacing.sm,
   },
   iconButton: {
-    padding: theme.spacing.sm,
+    padding: 8,
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    ...theme.shadows.sm,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.white,
-    margin: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    height: 56,
     borderWidth: 1,
-    borderColor: theme.colors.gray200,
-    ...theme.shadows.sm,
+    borderColor: "#EFEFEF",
+    // Shadow properties refined for web/mobile compatibility
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)'
+    } : {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.03,
+      shadowRadius: 8,
+      elevation: 2,
+    })
   },
   searchInput: {
     flex: 1,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textPrimary,
+    height: "100%",
+    fontSize: 16,
+    color: "#333",
+    marginLeft: 8,
   },
   filterButton: {
-    backgroundColor: theme.colors.primary,
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
+    backgroundColor: "#2D2D2D",
+    padding: 8,
+    borderRadius: 10,
     marginLeft: theme.spacing.sm,
   },
   activeFilters: {
@@ -471,21 +485,21 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   activeFiltersContent: {
-    gap: theme.spacing.sm,
+    gap: 8,
   },
   activeFilterChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    gap: theme.spacing.sm,
+    backgroundColor: "#F4A261",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
   },
   activeFilterText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.white,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontSize: 12,
+    color: "#FFF",
+    fontWeight: "600",
     textTransform: "capitalize",
   },
   viewToggle: {
@@ -496,29 +510,29 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.md,
   },
   resultsCount: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontSize: 14,
+    color: "#888",
+    fontWeight: "600",
   },
   toggleButtons: {
     flexDirection: "row",
-    gap: theme.spacing.xs,
+    gap: 8,
   },
   toggleButton: {
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.sm,
-    backgroundColor: theme.colors.gray100,
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: "#EEE",
   },
   toggleButtonActive: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: "#2D2D2D",
   },
   featuredSection: {
     marginBottom: theme.spacing.xl,
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#2D2D2D",
     marginBottom: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
   },
@@ -526,53 +540,60 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
   },
   featuredCard: {
-    width: 200,
-    marginRight: theme.spacing.md,
+    width: 260,
+    marginRight: 16,
+    borderRadius: 24,
+    backgroundColor: "#FFF",
   },
   listContent: {
     paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
+    paddingBottom: 40,
   },
   columnWrapper: {
     justifyContent: "space-between",
-    marginBottom: theme.spacing.md,
+    marginBottom: 20,
   },
   gridCard: {
     flex: 1,
-    marginBottom: theme.spacing.md,
-    marginHorizontal: theme.spacing.xs,
+    marginBottom: 16,
+    marginHorizontal: 0,
+    borderRadius: 20,
+    backgroundColor: "#FFF",
   },
   listCard: {
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
+    borderRadius: 20,
+    backgroundColor: "#FFF",
   },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: theme.spacing.xxxl,
+    paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
-    marginTop: theme.spacing.lg,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#2D2D2D",
+    marginTop: 20,
   },
   emptyText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
+    fontSize: 14,
+    color: "#888",
+    marginTop: 8,
     textAlign: "center",
+    lineHeight: 20,
   },
   clearButton: {
-    marginTop: theme.spacing.lg,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
+    marginTop: 24,
+    backgroundColor: "#2D2D2D",
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25,
   },
   clearButtonText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

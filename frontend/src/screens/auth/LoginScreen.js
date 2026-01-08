@@ -1,240 +1,3 @@
-// import React, { useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   StyleSheet,
-//   KeyboardAvoidingView,
-//   Platform,
-//   ScrollView,
-//   ActivityIndicator,
-// } from 'react-native';
-// import { StatusBar } from 'expo-status-bar';
-// import { Ionicons } from '@expo/vector-icons';
-// import { useAuth } from '../../context/AuthContext';
-// import theme from '../../theme';
-
-// const LoginScreen = ({ navigation }) => {
-//   const { login } = useAuth();
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState('');
-//   const [showPassword, setShowPassword] = useState(false);
-
-//   const handleLogin = async () => {
-//     if (!email || !password) {
-//       setError('Please fill in all fields');
-//       return;
-//     }
-
-//     setLoading(true);
-//     setError('');
-
-//     const result = await login(email.toLowerCase().trim(), password);
-
-//     if (!result.success) {
-//       setError(result.error);
-//     }
-
-//     setLoading(false);
-//   };
-
-//   return (
-//     <KeyboardAvoidingView
-//       style={styles.container}
-//       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-//     >
-//       <StatusBar style="light" />
-//       <ScrollView contentContainerStyle={styles.scrollContent}>
-//         {/* Header */}
-//         <View style={styles.header}>
-//           <Text style={styles.logo}>🐾</Text>
-//           <Text style={styles.title}>PawMitra</Text>
-//           <Text style={styles.subtitle}>Animal Welfare Network</Text>
-//         </View>
-
-//         {/* Form */}
-//         <View style={styles.form}>
-//           <Text style={styles.formTitle}>Welcome Back</Text>
-
-//           {error ? (
-//             <View style={styles.errorContainer}>
-//               <Ionicons name="alert-circle" size={20} color={theme.colors.error} />
-//               <Text style={styles.errorText}>{error}</Text>
-//             </View>
-//           ) : null}
-
-//           {/* Email Input */}
-//           <View style={styles.inputContainer}>
-//             <Ionicons name="mail-outline" size={20} color={theme.colors.gray400} style={styles.inputIcon} />
-//             <TextInput
-//               style={styles.input}
-//               placeholder="Email"
-//               placeholderTextColor={theme.colors.gray400}
-//               value={email}
-//               onChangeText={setEmail}
-//               keyboardType="email-address"
-//               autoCapitalize="none"
-//               autoCorrect={false}
-//             />
-//           </View>
-
-//           {/* Password Input */}
-//           <View style={styles.inputContainer}>
-//             <Ionicons name="lock-closed-outline" size={20} color={theme.colors.gray400} style={styles.inputIcon} />
-//             <TextInput
-//               style={styles.input}
-//               placeholder="Password"
-//               placeholderTextColor={theme.colors.gray400}
-//               value={password}
-//               onChangeText={setPassword}
-//               secureTextEntry={!showPassword}
-//               autoCapitalize="none"
-//             />
-//             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-//               <Ionicons
-//                 name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-//                 size={20}
-//                 color={theme.colors.gray400}
-//               />
-//             </TouchableOpacity>
-//           </View>
-
-//           {/* Login Button */}
-//           <TouchableOpacity
-//             style={[styles.button, loading && styles.buttonDisabled]}
-//             onPress={handleLogin}
-//             disabled={loading}
-//           >
-//             {loading ? (
-//               <ActivityIndicator color={theme.colors.white} />
-//             ) : (
-//               <Text style={styles.buttonText}>Login</Text>
-//             )}
-//           </TouchableOpacity>
-
-//           {/* Register Link */}
-//           <View style={styles.footer}>
-//             <Text style={styles.footerText}>Don't have an account? </Text>
-//             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-//               <Text style={styles.link}>Sign Up</Text>
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       </ScrollView>
-//     </KeyboardAvoidingView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: theme.colors.primary,
-//   },
-//   scrollContent: {
-//     flexGrow: 1,
-//     justifyContent: 'center',
-//     padding: theme.spacing.lg,
-//   },
-//   header: {
-//     alignItems: 'center',
-//     marginBottom: theme.spacing.xxl,
-//   },
-//   logo: {
-//     fontSize: 64,
-//     marginBottom: theme.spacing.md,
-//   },
-//   title: {
-//     fontSize: theme.typography.fontSize.xxxl,
-//     fontWeight: theme.typography.fontWeight.bold,
-//     color: theme.colors.white,
-//     marginBottom: theme.spacing.xs,
-//   },
-//   subtitle: {
-//     fontSize: theme.typography.fontSize.md,
-//     color: theme.colors.primaryLight,
-//   },
-//   form: {
-//     backgroundColor: theme.colors.white,
-//     borderRadius: theme.borderRadius.xxl,
-//     padding: theme.spacing.xl,
-//     ...theme.shadows.lg,
-//   },
-//   formTitle: {
-//     fontSize: theme.typography.fontSize.xxl,
-//     fontWeight: theme.typography.fontWeight.bold,
-//     color: theme.colors.textPrimary,
-//     marginBottom: theme.spacing.lg,
-//     textAlign: 'center',
-//   },
-//   errorContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: theme.colors.error + '20',
-//     padding: theme.spacing.md,
-//     borderRadius: theme.borderRadius.md,
-//     marginBottom: theme.spacing.md,
-//   },
-//   errorText: {
-//     color: theme.colors.error,
-//     marginLeft: theme.spacing.sm,
-//     flex: 1,
-//   },
-//   inputContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: theme.colors.gray50,
-//     borderRadius: theme.borderRadius.lg,
-//     paddingHorizontal: theme.spacing.md,
-//     marginBottom: theme.spacing.md,
-//     borderWidth: 1,
-//     borderColor: theme.colors.gray200,
-//   },
-//   inputIcon: {
-//     marginRight: theme.spacing.sm,
-//   },
-//   input: {
-//     flex: 1,
-//     paddingVertical: theme.spacing.md,
-//     fontSize: theme.typography.fontSize.md,
-//     color: theme.colors.textPrimary,
-//   },
-//   button: {
-//     backgroundColor: theme.colors.primary,
-//     borderRadius: theme.borderRadius.lg,
-//     paddingVertical: theme.spacing.md,
-//     alignItems: 'center',
-//     marginTop: theme.spacing.md,
-//     ...theme.shadows.md,
-//   },
-//   buttonDisabled: {
-//     opacity: 0.6,
-//   },
-//   buttonText: {
-//     color: theme.colors.white,
-//     fontSize: theme.typography.fontSize.lg,
-//     fontWeight: theme.typography.fontWeight.semibold,
-//   },
-//   footer: {
-//     flexDirection: 'row',
-//     justifyContent: 'center',
-//     marginTop: theme.spacing.lg,
-//   },
-//   footerText: {
-//     color: theme.colors.textSecondary,
-//     fontSize: theme.typography.fontSize.md,
-//   },
-//   link: {
-//     color: theme.colors.primary,
-//     fontSize: theme.typography.fontSize.md,
-//     fontWeight: theme.typography.fontWeight.semibold,
-//   },
-// });
-
-// export default LoginScreen;
-
 
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
@@ -256,6 +19,15 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import theme from "../../theme";
 import logo from "../../../assets/images/loginImage.png";
+import * as Animatable from "react-native-animatable";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing
+} from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
 
@@ -266,6 +38,24 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Reanimated Floating Animation for Hero Image
+  const translateY = useSharedValue(0);
+
+  React.useEffect(() => {
+    translateY.value = withRepeat(
+      withSequence(
+        withTiming(-15, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const floatingStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -289,25 +79,29 @@ const LoginScreen = ({ navigation }) => {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Top Logo Icon (Orange Box) */}
-          <View style={styles.topIconContainer}>
-            <View style={styles.logoBox}>
-              <Ionicons name="paw" size={24} color="#8B5E3C" />
-            </View>
-          </View>
+
 
           {/* Hero Illustration */}
-          <View style={styles.heroSection}>
-            <Image
+          <Animatable.View
+            animation="fadeInDown"
+            duration={1000}
+            style={styles.heroSection}
+          >
+            <Animated.Image
               // UPDATED: Using the local imported image
               source={logo}
-              style={styles.heroImage}
+              style={[styles.heroImage, floatingStyle]}
               resizeMode="contain"
             />
-          </View>
+          </Animatable.View>
 
           {/* Main Text & Form Area */}
-          <View style={styles.contentSection}>
+          <Animatable.View
+            animation="fadeInUp"
+            duration={1000}
+            delay={300}
+            style={styles.contentSection}
+          >
             <Text style={styles.headline}>Find Your Dream{"\n"}Pet Here</Text>
             <Text style={styles.subHeadline}>
               Join us & Discover the best & awesome{"\n"}pet in your location
@@ -378,7 +172,7 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.linkText}>Register</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </Animatable.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -394,28 +188,31 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     alignItems: "center",
-    paddingVertical: 20,
+    paddingVertical: 30,
   },
-
-  // Top Icon
-  topIconContainer: {
-    width: "100%",
+  logoWrapper: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
+    gap: 8,
     marginBottom: 20,
   },
-  logoBox: {
-    width: 48,
-    height: 48,
-    backgroundColor: "#FFDCA2", // The light orange square color
-    borderRadius: 12,
+  logoSquare: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#F4A26120", // Very light orange tint
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-
+  logoText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#2D2D2D",
+    letterSpacing: -0.5,
+  },
   // Hero
   heroSection: {
-    height: height * 0.35,
+    height: height * 0.32,
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
@@ -458,16 +255,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 16, // Rounded corners for inputs
+    borderRadius: 16,
     paddingHorizontal: 16,
     height: 56,
     borderWidth: 1,
-    borderColor: "#EFEFEF", // Very subtle border
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: "#EFEFEF",
+    // Unified shadow for web/mobile
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)'
+    } : {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.03,
+      shadowRadius: 8,
+      elevation: 2,
+    })
   },
   inputIcon: {
     marginRight: 12,
@@ -491,16 +293,21 @@ const styles = StyleSheet.create({
   loginButton: {
     width: "100%",
     height: 58,
-    backgroundColor: "#2D2D2D", // The dark button color
-    borderRadius: 30, // Fully rounded pill shape
+    backgroundColor: "#2D2D2D",
+    borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
-    shadowColor: "#2D2D2D",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    // Unified shadow for web/mobile
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 4px 8px rgba(45, 45, 45, 0.2)'
+    } : {
+      shadowColor: "#2D2D2D",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    })
   },
   buttonDisabled: {
     opacity: 0.7,

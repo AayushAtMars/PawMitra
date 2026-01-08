@@ -1,55 +1,47 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-beige: #FFF8F0;
+  --color-charcoal: #2D2D2D;
+  --color-orange: #F4A261;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-beige);
+    color: var(--color-charcoal);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
+  @apply bg-gray-300 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  @apply bg-gray-400;
 }
 
-/* Leaflet map styles */
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  border-radius: 0.5rem;
+/* Glassmorphism helpers */
+.glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
 }
 
-/* Custom animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Modern Card Style */
+.modern-card {
+  @apply bg-white rounded-3xl border border-[#EFEFEF] shadow-sm transition-all duration-300;
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Card hover effects */
-.card-hover {
-  transition: all 0.3s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+.modern-card:hover {
+  @apply -translate-y-1 shadow-xl shadow-gray-200/50;
 }
