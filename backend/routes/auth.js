@@ -233,10 +233,10 @@ router.get(
       volunteerData: req.user.isVolunteer ? req.user.volunteerData : undefined
     };
     
-    // Redirect to mobile app with token and user data
-    const redirectUrl = `com.pawmitra.app://auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
+    // Create redirect URLs for different scenarios
+    const appSchemeUrl = `pawmitra://auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
     
-    // Send HTML that will redirect to the app
+    // Send HTML with multiple redirect options
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -271,24 +271,50 @@ router.get(
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
             }
+            .token-display {
+              margin-top: 1rem;
+              padding: 1rem;
+              background: rgba(255,255,255,0.1);
+              border-radius: 8px;
+              word-break: break-all;
+              font-size: 0.8rem;
+            }
+            .copy-btn {
+              margin-top: 1rem;
+              padding: 0.5rem 1rem;
+              background: white;
+              color: #667eea;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="spinner"></div>
             <h2>Success! 🎉</h2>
-            <p>Redirecting to PawMitra...</p>
-            <p><small>If you're not redirected, <a href="${redirectUrl}" style="color: white;">click here</a></small></p>
+            <p>You are signed in as <strong>${req.user.email}</strong></p>
+            <p>Please close this browser window and return to the app.</p>
+            <p><small>The app will automatically receive your login.</small></p>
+            <div class="token-display">
+              <strong>Token:</strong><br/>
+              ${token.substring(0, 20)}...
+            </div>
           </div>
           <script>
-            window.location.href = '${redirectUrl}';
-            setTimeout(() => window.close(), 3000);
+            // Try app scheme redirect
+            window.location.href = '${appSchemeUrl}';
+            
+            // Auto close after delay
+            setTimeout(() => window.close(), 2000);
           </script>
         </body>
       </html>
     `);
   }
 );
+
 
 // @route   GET /api/auth/facebook
 // @desc    Facebook OAuth login
