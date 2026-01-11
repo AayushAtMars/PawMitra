@@ -1,46 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
+import * as Google from 'expo-auth-session/providers/google';
+import * as AuthSession from 'expo-auth-session';
+import { authAPI } from '../services/api';
+import { Alert } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
 
-  const apiUrl = Constants.expoConfig?.extra?.apiUrl?.replace('/api', '') || 'https://pawmitra-backend.onrender.com';
+  // Use the creation of a proxy redirect URI
+  const redirectUri = AuthSession.makeRedirectUri({
+    path: 'auth/callback',
+    useProxy: true, // This is key for using https://auth.expo.io/...
+  });
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: '851804434438-qm0ffjslhj2pl8t5crte80lfh45a426h.apps.googleusercontent.com', // Web Client ID
+    androidClientId: '851804434438-j6q9v73fhphlmt1gep0lvvm6n3cigjf5.apps.googleusercontent.com', 
+    redirectUri: redirectUri,
+    scopes: ['profile', 'email'],
+  });
 
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
       
-      // Open Google OAuth in browser
-      const result = await WebBrowser.openAuthSessionAsync(
-        `${apiUrl}/api/auth/google`,
-        'com.pawmitra.app://auth/callback'
-      );
+      const result = await promptAsync();
+      
+      if (result?.type === 'success') {
+        const { authentication } = result;
+        
+        // 1. Get User Info from Google directly
+        const userInfoResponse = await fetch(
+          'https://www.googleapis.com/userinfo/v2/me',
+          {
+            headers: { Authorization: `Bearer ${authentication.accessToken}` },
+          }
+        );
 
-      console.log('WebBrowser result:', result);
+        const userInfo = await userInfoResponse.json();
+        console.log('Got User Info:', userInfo);
 
-      if (result.type === 'success' && result.url) {
-        // Parse the URL to get token and user data
-        const url = Linking.parse(result.url);
-        const { token, user } = url.queryParams;
+        // 2. Send to Backend API (POST request)
+        // No redirect loop! Just a simple API call.
+        const apiResponse = await authAPI.googleLogin({
+          email: userInfo.email,
+          name: userInfo.name,
+          photo: userInfo.picture,
+          googleId: userInfo.id,
+        });
 
-        if (token && user) {
-          const userData = JSON.parse(decodeURIComponent(user));
-          
-          return {
-            token,
-            user: userData
-          };
-        }
+        return apiResponse.data;
       }
-
+      
       return null;
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      console.error('Sign in error:', error);
+      Alert.alert('Login Failed', error.message);
       throw error;
     } finally {
       setLoading(false);
@@ -50,6 +68,6 @@ export const useGoogleAuth = () => {
   return {
     signInWithGoogle,
     loading,
-    request: true, // For compatibility
+    request,
   };
 };

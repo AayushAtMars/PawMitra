@@ -70,7 +70,7 @@
     "extra": {
       "apiUrl": "https://pawmitra-backend.onrender.com/api",
       "socketUrl": "https://pawmitra-backend.onrender.com",
-      "googleClientId": "851804434438-j6q9v73fhphlmt1gep0lvvm6n3cigjf5.apps.googleusercontent.com",
+      "googleClientId": "851804434438-qm0ffjslhj2pl8t5crte80lfh45a426h.apps.googleusercontent.com",
       "eas": {
         "projectId": "225b6d1b-2b24-4ea4-b469-772974513a3f"
       }
