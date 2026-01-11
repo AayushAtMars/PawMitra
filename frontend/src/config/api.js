@@ -1,6 +1,9 @@
 import { Platform } from "react-native";
 
-const LOCAL_IP = "10.81.116.224";
+// For Android Emulator: 10.0.2.2 is the special alias to access host machine's localhost
+// For Physical Device: Replace with your computer's IP (e.g., 192.168.1.100)
+// Make sure both devices are on the same WiFi network when using physical device
+const LOCAL_IP = "10.0.2.2";
 
 export const API_URL =
   Platform.OS === "web"
