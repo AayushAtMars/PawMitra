@@ -180,10 +180,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  // Login function - supports both email/password and OAuth token login
+  const login = async (email, password, oauthToken = null, oauthUser = null) => {
     try {
-      const response = await authAPI.login({ email, password });
-      const { token, user: userData } = response.data;
+      let token, userData;
+
+      // If OAuth token provided, use it directly
+      if (oauthToken && oauthUser) {
+        token = oauthToken;
+        userData = oauthUser;
+      } else {
+        // Otherwise, use email/password login
+        const response = await authAPI.login({ email, password });
+        token = response.data.token;
+        userData = response.data.user;
+      }
 
       console.log("Login successful, saving token...");
       await AsyncStorage.setItem("authToken", token);

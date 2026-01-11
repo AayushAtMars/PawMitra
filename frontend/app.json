@@ -1,0 +1,77 @@
+{
+    "expo": {
+        "name": "PawMitra",
+        "slug": "pawmitra-mobile",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "main": "./index.js",
+        "scheme": "pawmitra",
+        "userInterfaceStyle": "automatic",
+        "splash": {
+            "image": "./assets/images/splash-icon.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#4F46E5"
+        },
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "ios": {
+            "supportsTablet": true,
+            "bundleIdentifier": "com.pawmitra.app",
+            "infoPlist": {
+                "NSCameraUsageDescription": "PawMitra needs camera access to capture photos of injured animals for reporting incidents.",
+                "NSPhotoLibraryUsageDescription": "PawMitra needs photo library access to select images for incident reports and pet profiles.",
+                "NSLocationWhenInUseUsageDescription": "PawMitra needs your location to find nearby incidents and volunteers.",
+                "NSLocationAlwaysUsageDescription": "PawMitra needs your location to alert you about nearby animal emergencies even when the app is in the background.",
+                "NSMicrophoneUsageDescription": "PawMitra needs microphone access to allow you to use speech-to-text for reporting incidents and chatting with the AI assistant."
+            }
+        },
+        "android": {
+            "package": "com.pawmitra.app",
+            "adaptiveIcon": {
+                "foregroundImage": "./assets/icon.png",
+                "backgroundColor": "#4F46E5"
+            },
+            "permissions": [
+                "CAMERA",
+                "READ_EXTERNAL_STORAGE",
+                "WRITE_EXTERNAL_STORAGE",
+                "ACCESS_FINE_LOCATION",
+                "ACCESS_COARSE_LOCATION",
+                "INTERNET",
+                "RECORD_AUDIO"
+            ],
+            "config": {
+                "googleMaps": {
+                    "apiKey": ""
+                }
+            }
+        },
+        "web": {
+            "bundler": "metro",
+            "favicon": "./assets/icon.png"
+        },
+        "plugins": [
+            [
+                "expo-camera",
+                {
+                    "cameraPermission": "Allow PawMitra to access your camera to capture photos of animals in distress."
+                }
+            ],
+            [
+                "expo-location",
+                {
+                    "locationAlwaysAndWhenInUsePermission": "Allow PawMitra to use your location to find nearby incidents and volunteers."
+                }
+            ]
+        ],
+        "extra": {
+            "apiUrl": "https://pawmitra-backend.onrender.com/api",
+            "socketUrl": "https://pawmitra-backend.onrender.com",
+            "eas": {
+                "projectId": "225b6d1b-2b24-4ea4-b469-772974513a3f"
+            }
+        }
+    }
+}
