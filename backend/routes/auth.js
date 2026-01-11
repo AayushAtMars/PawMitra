@@ -207,16 +207,10 @@ router.put('/profile', authenticate, uploadSingle, handleUploadError, async (req
 // @access  Public
 router.get(
   '/google',
-  (req, res, next) => {
-    const redirectUri = req.query.redirect_uri || 'com.pawmitra.app://auth/callback';
-    const state = Buffer.from(JSON.stringify({ redirectUri })).toString('base64');
-    
-    passport.authenticate('google', {
-      scope: ['profile', 'email'],
-      session: false,
-      state: state
-    })(req, res, next);
-  }
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false
+  })
 );
 
 // @route   GET /api/auth/google/callback
@@ -239,23 +233,8 @@ router.get(
       volunteerData: req.user.isVolunteer ? req.user.volunteerData : undefined
     };
     
-    // Get redirect URI from state
-    let targetRedirect = 'com.pawmitra.app://auth/callback';
-    if (req.query.state) {
-      try {
-        const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
-        if (stateData.redirectUri) {
-          targetRedirect = stateData.redirectUri;
-        }
-      } catch (err) {
-        console.error('Error parsing state:', err);
-      }
-    }
-
     // Redirect to mobile app with token and user data
-    // Use proper separator (? or &)
-    const separator = targetRedirect.includes('?') ? '&' : '?';
-    const redirectUrl = `${targetRedirect}${separator}token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
+    const redirectUrl = `com.pawmitra.app://auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
     
     // Send HTML that will redirect to the app
     res.send(`
