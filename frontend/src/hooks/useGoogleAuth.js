@@ -1,59 +1,41 @@
 import { useState } from 'react';
-import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { authAPI } from '../services/api';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
 
-  const googleClientId = Constants.expoConfig?.extra?.googleClientId;
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: googleClientId,
-    iosClientId: googleClientId,
-    expoClientId: googleClientId, // For Expo Go
-    scopes: ['profile', 'email'],
-  });
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl?.replace('/api', '') || 'https://pawmitra-backend.onrender.com';
 
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
       
-      if (!request) {
-        throw new Error('Google Auth not configured');
-      }
+      // Open Google OAuth in browser
+      const result = await WebBrowser.openAuthSessionAsync(
+        `${apiUrl}/api/auth/google`,
+        'com.pawmitra.app://auth/callback'
+      );
 
-      const result = await promptAsync();
-      
-      console.log('Google auth result:', result);
+      console.log('WebBrowser result:', result);
 
-      if (result.type === 'success') {
-        // Get user info from Google
-        const userInfoResponse = await fetch(
-          'https://www.googleapis.com/userinfo/v2/me',
-          {
-            headers: { Authorization: `Bearer ${result.authentication.accessToken}` },
-          }
-        );
+      if (result.type === 'success' && result.url) {
+        // Parse the URL to get token and user data
+        const url = Linking.parse(result.url);
+        const { token, user } = url.queryParams;
 
-        const userInfo = await userInfoResponse.json();
-        console.log('User info from Google:', userInfo);
-
-        // Send to your backend
-        const response = await authAPI.googleLogin({
-          email: userInfo.email,
-          name: userInfo.name,
-          photo: userInfo.picture,
-          googleId: userInfo.id,
-        });
-
-        return response.data;
-      } else if (result.type === 'error') {
-        console.error('Google auth error:', result.error);
-        throw new Error(result.error?.message || 'Google sign-in failed');
+        if (token && user) {
+          const userData = JSON.parse(decodeURIComponent(user));
+          
+          return {
+            token,
+            user: userData
+          };
+        }
       }
 
       return null;
@@ -68,6 +50,6 @@ export const useGoogleAuth = () => {
   return {
     signInWithGoogle,
     loading,
-    request,
+    request: true, // For compatibility
   };
 };

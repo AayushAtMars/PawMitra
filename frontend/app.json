@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "main": "./index.js",
     "userInterfaceStyle": "automatic",
+    "scheme": "com.pawmitra.app",
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -39,11 +40,7 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "INTERNET",
-        "RECORD_AUDIO",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "RECORD_AUDIO"
       ],
       "config": {
         "googleMaps": {
@@ -73,7 +70,7 @@
     "extra": {
       "apiUrl": "https://pawmitra-backend.onrender.com/api",
       "socketUrl": "https://pawmitra-backend.onrender.com",
-       "googleClientId":"851804434438-j6q9v73fhphlmt1gep0lvvm6n3cigjf5.apps.googleusercontent.com",
+      "googleClientId": "851804434438-j6q9v73fhphlmt1gep0lvvm6n3cigjf5.apps.googleusercontent.com",
       "eas": {
         "projectId": "225b6d1b-2b24-4ea4-b469-772974513a3f"
       }
