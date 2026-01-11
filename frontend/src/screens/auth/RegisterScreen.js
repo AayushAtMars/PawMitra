@@ -1,53 +1,58 @@
-import React, { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
-import theme from '../../theme';
+  View,
+} from "react-native";
+import * as Animatable from "react-native-animatable";
+import { useAuth } from "../../context/AuthContext";
+import theme from "../../theme";
+
+const { width, height } = Dimensions.get("window");
 
 const RegisterScreen = ({ navigation }) => {
   const { register } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'citizen',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "citizen",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
     const { name, email, password, confirmPassword, role } = formData;
 
     if (!name || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError("Password must be at least 6 characters");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     const result = await register({
       name: name.trim(),
@@ -64,317 +69,362 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const updateFormData = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Back Button & Logo Header */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#2D2D2D" />
+            </TouchableOpacity>
+
+
+            <View style={{ width: 40 }} />
+          </View>
+
+          {/* Main Title & Form Area */}
+          <Animatable.View
+            animation="fadeInUp"
+            duration={1000}
+            style={styles.contentSection}
           >
-            <Ionicons name="arrow-back" size={24} color={theme.colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.logo}>🐾</Text>
-          <Text style={styles.title}>Join PawMitra</Text>
-          <Text style={styles.subtitle}>Make a difference today</Text>
-        </View>
+            <Text style={styles.headline}>Join PawMitra</Text>
+            <Text style={styles.subHeadline}>
+              Make a difference today and discover{"\n"}awesome pets in your location
+            </Text>
 
-        {/* Form */}
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Create Account</Text>
+            {/* Error Message */}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
-          {error ? (
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={20} color={theme.colors.error} />
-              <Text style={styles.errorText}>{error}</Text>
+            {/* Inputs */}
+            <View style={styles.formContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="person-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Full Name"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.name}
+                  onChangeText={(value) => updateFormData("name", value)}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email Address"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.email}
+                  onChangeText={(value) => updateFormData("email", value)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.password}
+                  onChangeText={(value) => updateFormData("password", value)}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? "eye-outline" : "eye-off-outline"}
+                    size={20}
+                    color="#9CA3AF"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.confirmPassword}
+                  onChangeText={(value) => updateFormData("confirmPassword", value)}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Role Selection */}
+              <Text style={styles.label}>I want to join as:</Text>
+              <View style={styles.roleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    formData.role === "citizen" && styles.roleButtonActive,
+                  ]}
+                  onPress={() => updateFormData("role", "citizen")}
+                >
+                  <Ionicons
+                    name="people"
+                    size={20}
+                    color={formData.role === "citizen" ? "#FFF" : "#666"}
+                  />
+                  <Text style={[
+                    styles.roleText,
+                    formData.role === "citizen" && styles.roleTextActive,
+                  ]}>
+                    Citizen
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    formData.role === "volunteer" && styles.roleButtonActive,
+                  ]}
+                  onPress={() => updateFormData("role", "volunteer")}
+                >
+                  <Ionicons
+                    name="heart"
+                    size={20}
+                    color={formData.role === "volunteer" ? "#FFF" : "#666"}
+                  />
+                  <Text style={[
+                    styles.roleText,
+                    formData.role === "volunteer" && styles.roleTextActive,
+                  ]}>
+                    Volunteer
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          ) : null}
 
-          {/* Name Input */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color={theme.colors.gray400} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor={theme.colors.gray400}
-              value={formData.name}
-              onChangeText={(value) => updateFormData('name', value)}
-              autoCapitalize="words"
-            />
-          </View>
-
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color={theme.colors.gray400} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={theme.colors.gray400}
-              value={formData.email}
-              onChangeText={(value) => updateFormData('email', value)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={theme.colors.gray400} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={theme.colors.gray400}
-              value={formData.password}
-              onChangeText={(value) => updateFormData('password', value)}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={theme.colors.gray400}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={theme.colors.gray400} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor={theme.colors.gray400}
-              value={formData.confirmPassword}
-              onChangeText={(value) => updateFormData('confirmPassword', value)}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-          </View>
-
-          {/* Role Selection */}
-          <Text style={styles.label}>I want to join as:</Text>
-          <View style={styles.roleContainer}>
+            {/* Main Action Button (Dark Pill) */}
             <TouchableOpacity
-              style={[
-                styles.roleButton,
-                formData.role === 'citizen' && styles.roleButtonActive
-              ]}
-              onPress={() => updateFormData('role', 'citizen')}
+              style={[styles.registerButton, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
             >
-              <Ionicons
-                name="people"
-                size={24}
-                color={formData.role === 'citizen' ? theme.colors.white : theme.colors.gray600}
-              />
-              <Text style={[
-                styles.roleText,
-                formData.role === 'citizen' && styles.roleTextActive
-              ]}>
-                Citizen
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.registerButtonText}>Create Account</Text>
+              )}
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.roleButton,
-                formData.role === 'volunteer' && styles.roleButtonActive
-              ]}
-              onPress={() => updateFormData('role', 'volunteer')}
-            >
-              <Ionicons
-                name="heart"
-                size={24}
-                color={formData.role === 'volunteer' ? theme.colors.white : theme.colors.gray600}
-              />
-              <Text style={[
-                styles.roleText,
-                formData.role === 'volunteer' && styles.roleTextActive
-              ]}>
-                Volunteer
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Register Button */}
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={theme.colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Login Link */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.link}>Login</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                <Text style={styles.linkText}>Login</Text>
+              </TouchableOpacity>
+            </View>
+          </Animatable.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: "#FFF8F0",
   },
   scrollContent: {
     flexGrow: 1,
-    padding: theme.spacing.lg,
-    paddingTop: theme.spacing.xxl,
+    alignItems: "center",
+    paddingVertical: 30,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+  headerRow: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  logoWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  logoSquare: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#F4A26120",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#2D2D2D",
+    letterSpacing: -0.5,
   },
   backButton: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    padding: theme.spacing.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  logo: {
-    fontSize: 48,
-    marginBottom: theme.spacing.sm,
+  contentSection: {
+    width: "100%",
+    paddingHorizontal: 30,
+    alignItems: "center",
   },
-  title: {
-    fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.white,
-    marginBottom: theme.spacing.xs,
+  headline: {
+    fontSize: 28,
+    fontWeight: "900",
+    textAlign: "center",
+    color: "#2D2D2D",
+    marginBottom: 10,
+    lineHeight: 36,
   },
-  subtitle: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.primaryLight,
+  subHeadline: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+    marginBottom: 30,
+    lineHeight: 20,
   },
-  form: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.xxl,
-    padding: theme.spacing.xl,
-    ...theme.shadows.lg,
+  formContainer: {
+    width: "100%",
+    gap: 16,
+    marginBottom: 24,
   },
-  formTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.error + '20',
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
-  },
-  errorText: {
-    color: theme.colors.error,
-    marginLeft: theme.spacing.sm,
-    flex: 1,
-    fontSize: theme.typography.fontSize.sm,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.gray50,
-    borderRadius: theme.borderRadius.lg,
-    paddingHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 56,
     borderWidth: 1,
-    borderColor: theme.colors.gray200,
+    borderColor: "#EFEFEF",
+    // Unified shadow for web/mobile
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)'
+    } : {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.03,
+      shadowRadius: 8,
+      elevation: 2,
+    })
   },
   inputIcon: {
-    marginRight: theme.spacing.sm,
+    marginRight: 12,
   },
   input: {
     flex: 1,
-    paddingVertical: theme.spacing.md,
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textPrimary,
+    height: "100%",
+    fontSize: 16,
+    color: "#333",
   },
   label: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2D2D2D",
+    marginTop: 8,
+    marginBottom: 4,
   },
   roleContainer: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
+    flexDirection: "row",
+    gap: 12,
   },
   roleButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.gray100,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    borderWidth: 2,
-    borderColor: theme.colors.gray200,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 48,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#EFEFEF",
+    gap: 8,
   },
   roleButtonActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+    backgroundColor: "#F4A261", // Using the accent color for active role
+    borderColor: "#F4A261",
   },
   roleText: {
-    marginLeft: theme.spacing.sm,
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.gray600,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
   },
   roleTextActive: {
-    color: theme.colors.white,
+    color: "#FFF",
   },
-  button: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-    marginTop: theme.spacing.md,
-    ...theme.shadows.md,
+  registerButton: {
+    width: "100%",
+    height: 58,
+    backgroundColor: "#2D2D2D",
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    // Unified shadow for web/mobile
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 4px 8px rgba(45, 45, 45, 0.2)'
+    } : {
+      shadowColor: "#2D2D2D",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    })
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
-  buttonText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+  registerButtonText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: theme.spacing.lg,
+    flexDirection: "row",
+    marginBottom: 20,
+    gap: 5,
   },
   footerText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.typography.fontSize.sm,
+    color: "#666",
+    fontSize: 14,
   },
-  link: {
-    color: theme.colors.primary,
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.semibold,
+  linkText: {
+    color: "#F4A261",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  errorContainer: {
+    width: "100%",
+    backgroundColor: "#FEE2E2",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#DC2626",
+    fontSize: 13,
   },
 });
 

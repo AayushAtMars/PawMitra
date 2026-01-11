@@ -157,7 +157,7 @@ const PetDetailsModal = ({
                 <Ionicons name="paw" size={24} color={theme.colors.primary} />
                 <Text style={styles.infoLabel}>Breed</Text>
                 <Text style={styles.infoValue}>
-                  {String(pet.breed || pet.species || "Mixed")}
+                  {typeof pet.breed === 'string' ? pet.breed : (typeof pet.species === 'string' ? pet.species : 'Mixed')}
                 </Text>
               </View>
 
@@ -165,7 +165,9 @@ const PetDetailsModal = ({
                 <View style={styles.infoCard}>
                   <Ionicons name="calendar" size={24} color={theme.colors.secondary} />
                   <Text style={styles.infoLabel}>Age</Text>
-                  <Text style={styles.infoValue}>{String(pet.age)}</Text>
+                  <Text style={styles.infoValue}>
+                    {typeof pet.age === 'object' ? `${pet.age.value} ${pet.age.unit}` : String(pet.age)}
+                  </Text>
                 </View>
               )}
 
@@ -173,7 +175,11 @@ const PetDetailsModal = ({
                 <View style={styles.infoCard}>
                   <Ionicons name="medical" size={24} color={theme.colors.success} />
                   <Text style={styles.infoLabel}>Health</Text>
-                  <Text style={styles.infoValue}>{String(pet.healthStatus)}</Text>
+                  <Text style={styles.infoValue}>
+                    {typeof pet.healthStatus === 'object'
+                      ? (pet.healthStatus.vaccinated ? 'Vaccinated' : 'Not Vaccinated')
+                      : String(pet.healthStatus)}
+                  </Text>
                 </View>
               )}
             </View>

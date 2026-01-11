@@ -4,12 +4,12 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
 
-const PetCard = ({ 
-  pet, 
-  onPress, 
+const PetCard = ({
+  pet,
+  onPress,
   onFavorite,
   isFavorited = false,
-  style 
+  style
 }) => {
   const [favorited, setFavorited] = useState(isFavorited);
 
@@ -31,7 +31,7 @@ const PetCard = ({
   };
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.card, style]}
       onPress={() => onPress?.(pet)}
       activeOpacity={0.9}
@@ -39,8 +39,8 @@ const PetCard = ({
       {/* Pet Image */}
       <View style={styles.imageContainer}>
         {pet.photos && pet.photos.length > 0 ? (
-          <Image 
-            source={{ uri: pet.photos[0].url }} 
+          <Image
+            source={{ uri: pet.photos[0].url }}
             style={styles.image}
             resizeMode="cover"
           />
@@ -49,17 +49,17 @@ const PetCard = ({
             <Ionicons name="paw" size={48} color={theme.colors.gray300} />
           </View>
         )}
-        
+
         {/* Favorite Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.favoriteButton}
           onPress={handleFavorite}
           activeOpacity={0.8}
         >
-          <Ionicons 
-            name={favorited ? 'heart' : 'heart-outline'} 
-            size={22} 
-            color={favorited ? theme.colors.error : theme.colors.white} 
+          <Ionicons
+            name={favorited ? 'heart' : 'heart-outline'}
+            size={22}
+            color={favorited ? theme.colors.error : theme.colors.white}
           />
         </TouchableOpacity>
 
@@ -77,10 +77,10 @@ const PetCard = ({
           <Text style={styles.name} numberOfLines={1}>
             {String(pet.name || 'Unknown')}
           </Text>
-          <Ionicons 
-            name={getGenderIcon(pet.gender)} 
-            size={18} 
-            color={getGenderColor(pet.gender)} 
+          <Ionicons
+            name={getGenderIcon(pet.gender)}
+            size={18}
+            color={getGenderColor(pet.gender)}
           />
         </View>
 
@@ -88,23 +88,25 @@ const PetCard = ({
           <View style={styles.detailRow}>
             <Ionicons name="paw" size={14} color={theme.colors.textSecondary} />
             <Text style={styles.detailText}>
-              {String(pet.breed || pet.species || 'Mixed')}
+              {typeof pet.breed === 'string' ? pet.breed : (typeof pet.species === 'string' ? pet.species : 'Mixed')}
             </Text>
           </View>
-          
+
           {pet.age && (
             <View style={styles.detailRow}>
               <Ionicons name="calendar-outline" size={14} color={theme.colors.textSecondary} />
-              <Text style={styles.detailText}>{String(pet.age)}</Text>
+              <Text style={styles.detailText}>
+                {typeof pet.age === 'object' ? `${pet.age.value} ${pet.age.unit}` : String(pet.age)}
+              </Text>
             </View>
           )}
         </View>
 
-        {pet.location && (
+        {pet.address && (
           <View style={styles.location}>
             <Ionicons name="location" size={12} color={theme.colors.primary} />
             <Text style={styles.locationText} numberOfLines={1}>
-              {String(pet.location)}
+              {String(pet.address)}
             </Text>
           </View>
         )}
