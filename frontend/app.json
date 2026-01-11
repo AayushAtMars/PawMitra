@@ -29,7 +29,7 @@
     "android": {
       "package": "com.pawmitra.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#4F46E5"
       },
       "permissions": [
@@ -53,7 +53,7 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "plugins": [
       [
@@ -67,11 +67,13 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow PawMitra to use your location to find nearby incidents and volunteers."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "apiUrl": "https://pawmitra-backend.onrender.com/api",
       "socketUrl": "https://pawmitra-backend.onrender.com",
+       "googleClientId":"851804434438-j6q9v73fhphlmt1gep0lvvm6n3cigjf5.apps.googleusercontent.com",
       "eas": {
         "projectId": "225b6d1b-2b24-4ea4-b469-772974513a3f"
       }

@@ -1,9 +1,9 @@
-
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -16,7 +16,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from "../../context/AuthContext";
+import { useGoogleAuth } from "../../hooks/useGoogleAuth";
 import theme from "../../theme";
 import logo from "../../../assets/images/loginImage.png";
 import * as Animatable from "react-native-animatable";
@@ -33,6 +35,8 @@ const { width, height } = Dimensions.get("window");
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useAuth();
+  const { signInWithGoogle, loading: googleLoading } = useGoogleAuth();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,6 +75,27 @@ const LoginScreen = ({ navigation }) => {
     setLoading(false);
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setError("");
+      const result = await signInWithGoogle();
+      
+      if (result) {
+        // Save token and user
+        await AsyncStorage.setItem('authToken', result.token);
+        await AsyncStorage.setItem('user', JSON.stringify(result.user));
+        
+        // Update context
+        login(result.token, result.user);
+        
+        Alert.alert('Success! 🎉', 'Signed in with Google successfully!');
+      }
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      setError('Google sign-in failed. Please try again.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -80,7 +105,6 @@ const LoginScreen = ({ navigation }) => {
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-
           {/* Hero Illustration */}
           <Animatable.View
             animation="fadeInDown"
@@ -88,7 +112,6 @@ const LoginScreen = ({ navigation }) => {
             style={styles.heroSection}
           >
             <Animated.Image
-              // UPDATED: Using the local imported image
               source={logo}
               style={[styles.heroImage, floatingStyle]}
               resizeMode="contain"
@@ -115,6 +138,25 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               )
               : null}
+
+            {/* Google Sign-In Button */}
+            <TouchableOpacity
+              style={styles.googleButton}
+              onPress={handleGoogleSignIn}
+              disabled={googleLoading || loading}
+            >
+              <Ionicons name="logo-google" size={24} color="#DB4437" />
+              <Text style={styles.googleButtonText}>
+                {googleLoading ? 'Signing in...' : 'Continue with Google'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.divider} />
+            </View>
 
             {/* Inputs */}
             <View style={styles.formContainer}>
@@ -158,9 +200,9 @@ const LoginScreen = ({ navigation }) => {
 
             {/* Main Action Button (Dark Pill) */}
             <TouchableOpacity
-              style={[styles.loginButton, loading && styles.buttonDisabled]}
+              style={[styles.loginButton, (loading || googleLoading) && styles.buttonDisabled]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loading || googleLoading}
             >
               {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.loginButtonText}>Login</Text>}
             </TouchableOpacity>
@@ -182,7 +224,6 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // The specific beige color from the image
     backgroundColor: "#FFF8F0",
   },
   scrollContent: {
@@ -190,27 +231,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 30,
   },
-  logoWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 20,
-  },
-  logoSquare: {
-    width: 32,
-    height: 32,
-    backgroundColor: "#F4A26120", // Very light orange tint
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#2D2D2D",
-    letterSpacing: -0.5,
-  },
-  // Hero
   heroSection: {
     height: height * 0.32,
     width: "100%",
@@ -222,8 +242,6 @@ const styles = StyleSheet.create({
     width: width * 0.8,
     height: "100%",
   },
-
-  // Content
   contentSection: {
     width: "100%",
     paddingHorizontal: 30,
@@ -233,7 +251,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "900",
     textAlign: "center",
-    color: "#2D2D2D", // Dark charcoal
+    color: "#2D2D2D",
     marginBottom: 10,
     lineHeight: 36,
   },
@@ -244,8 +262,63 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     lineHeight: 20,
   },
-
-  // Form
+  errorContainer: {
+    width: "100%",
+    backgroundColor: "#FEE2E2",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#DC2626",
+    fontSize: 13,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    borderWidth: 1.5,
+    borderColor: '#E0E0E0',
+    marginBottom: 20,
+    width: '100%',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)'
+    } : {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    })
+  },
+  googleButtonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  dividerText: {
+    marginHorizontal: 15,
+    color: '#888',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   formContainer: {
     width: "100%",
     gap: 16,
@@ -260,7 +333,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderWidth: 1,
     borderColor: "#EFEFEF",
-    // Unified shadow for web/mobile
     ...(Platform.OS === 'web' ? {
       boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)'
     } : {
@@ -285,11 +357,9 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 13,
-    color: "#FFB74D", // Matching the orange accent
+    color: "#FFB74D",
     fontWeight: "600",
   },
-
-  // Login Button (The Dark Pill)
   loginButton: {
     width: "100%",
     height: 58,
@@ -298,7 +368,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
-    // Unified shadow for web/mobile
     ...(Platform.OS === 'web' ? {
       boxShadow: '0px 4px 8px rgba(45, 45, 45, 0.2)'
     } : {
@@ -317,8 +386,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-
-  // Footer
   footer: {
     flexDirection: "row",
     marginBottom: 20,
@@ -328,23 +395,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   linkText: {
-    color: "#F4A261", // Orange accent
+    color: "#F4A261",
     fontWeight: "bold",
     fontSize: 14,
-  },
-
-  // Error
-  errorContainer: {
-    width: "100%",
-    backgroundColor: "#FEE2E2",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  errorText: {
-    color: "#DC2626",
-    fontSize: 13,
   },
 });
 

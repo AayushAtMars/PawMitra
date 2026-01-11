@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -14,14 +15,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Animatable from "react-native-animatable";
 import { useAuth } from "../../context/AuthContext";
+import { useGoogleAuth } from "../../hooks/useGoogleAuth";
 import theme from "../../theme";
 
 const { width, height } = Dimensions.get("window");
 
 const RegisterScreen = ({ navigation }) => {
-  const { register } = useAuth();
+  const { register, login } = useAuth();
+  const { signInWithGoogle, loading: googleLoading } = useGoogleAuth();
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -68,6 +73,27 @@ const RegisterScreen = ({ navigation }) => {
     setLoading(false);
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setError("");
+      const result = await signInWithGoogle();
+      
+      if (result) {
+        // Save token and user
+        await AsyncStorage.setItem('authToken', result.token);
+        await AsyncStorage.setItem('user', JSON.stringify(result.user));
+        
+        // Update context
+        login(result.token, result.user);
+        
+        Alert.alert('Success! 🎉', 'Account created with Google successfully!');
+      }
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      setError('Google sign-in failed. Please try again.');
+    }
+  };
+
   const updateFormData = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
@@ -85,8 +111,6 @@ const RegisterScreen = ({ navigation }) => {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color="#2D2D2D" />
             </TouchableOpacity>
-
-
             <View style={{ width: 40 }} />
           </View>
 
@@ -107,6 +131,25 @@ const RegisterScreen = ({ navigation }) => {
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
+
+            {/* Google Sign-In Button */}
+            <TouchableOpacity
+              style={styles.googleButton}
+              onPress={handleGoogleSignIn}
+              disabled={googleLoading || loading}
+            >
+              <Ionicons name="logo-google" size={24} color="#DB4437" />
+              <Text style={styles.googleButtonText}>
+                {googleLoading ? 'Creating account...' : 'Sign up with Google'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.divider} />
+            </View>
 
             {/* Inputs */}
             <View style={styles.formContainer}>
@@ -215,9 +258,9 @@ const RegisterScreen = ({ navigation }) => {
 
             {/* Main Action Button (Dark Pill) */}
             <TouchableOpacity
-              style={[styles.registerButton, loading && styles.buttonDisabled]}
+              style={[styles.registerButton, (loading || googleLoading) && styles.buttonDisabled]}
               onPress={handleRegister}
-              disabled={loading}
+              disabled={loading || googleLoading}
             >
               {loading ? (
                 <ActivityIndicator color="#FFF" />
@@ -258,25 +301,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 20,
   },
-  logoWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  logoSquare: {
-    width: 32,
-    height: 32,
-    backgroundColor: "#F4A26120",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#2D2D2D",
-    letterSpacing: -0.5,
-  },
   backButton: {
     width: 40,
     height: 40,
@@ -304,6 +328,63 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     lineHeight: 20,
   },
+  errorContainer: {
+    width: "100%",
+    backgroundColor: "#FEE2E2",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#DC2626",
+    fontSize: 13,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    borderWidth: 1.5,
+    borderColor: '#E0E0E0',
+    marginBottom: 20,
+    width: '100%',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)'
+    } : {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    })
+  },
+  googleButtonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  dividerText: {
+    marginHorizontal: 15,
+    color: '#888',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   formContainer: {
     width: "100%",
     gap: 16,
@@ -318,7 +399,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderWidth: 1,
     borderColor: "#EFEFEF",
-    // Unified shadow for web/mobile
     ...(Platform.OS === 'web' ? {
       boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)'
     } : {
@@ -362,7 +442,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   roleButtonActive: {
-    backgroundColor: "#F4A261", // Using the accent color for active role
+    backgroundColor: "#F4A261",
     borderColor: "#F4A261",
   },
   roleText: {
@@ -381,7 +461,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
-    // Unified shadow for web/mobile
     ...(Platform.OS === 'web' ? {
       boxShadow: '0px 4px 8px rgba(45, 45, 45, 0.2)'
     } : {
@@ -413,18 +492,6 @@ const styles = StyleSheet.create({
     color: "#F4A261",
     fontWeight: "bold",
     fontSize: 14,
-  },
-  errorContainer: {
-    width: "100%",
-    backgroundColor: "#FEE2E2",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  errorText: {
-    color: "#DC2626",
-    fontSize: 13,
   },
 });
 
