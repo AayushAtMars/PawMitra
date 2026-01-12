@@ -693,7 +693,7 @@
 
 
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Image,
@@ -705,8 +705,11 @@ import {
   TouchableOpacity,
   View,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
+import { volunteersAPI } from "../../services/api";
 import theme from "../../theme";
 
 // Local Aesthetic Colors
@@ -721,7 +724,9 @@ const colors = {
 };
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -742,6 +747,39 @@ const ProfileScreen = ({ navigation }) => {
         },
       ],
     );
+  };
+
+  const handleBecomeVolunteer = async () => {
+    try {
+      setIsRegistering(true);
+      const response = await volunteersAPI.register({
+        serviceRadius: 5000, // 5km default
+      });
+      
+      if (response.data.success) {
+        // Update the user in context
+        const updatedUser = {
+          ...user,
+          isVolunteer: true,
+          volunteerData: response.data.user.volunteerData,
+        };
+        await updateUser(updatedUser);
+        setShowVolunteerModal(false);
+        Alert.alert(
+          "Welcome, Volunteer! 🎉",
+          "Thank you for joining our volunteer community. You can now help animals in need!",
+          [{ text: "Let's Go!" }]
+        );
+      }
+    } catch (error) {
+      console.error("Volunteer registration error:", error);
+      Alert.alert(
+        "Registration Failed",
+        error.response?.data?.error || "Failed to register as volunteer. Please try again."
+      );
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const menuItems = [
@@ -848,8 +886,30 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         )}
 
+        {/* Become a Volunteer Card - Only for non-volunteers */}
+        {!user?.isVolunteer && (
+          <TouchableOpacity 
+            style={styles.volunteerCard}
+            onPress={() => setShowVolunteerModal(true)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.volunteerCardContent}>
+              <View style={styles.volunteerIconContainer}>
+                <Ionicons name="heart" size={32} color={colors.white} />
+              </View>
+              <View style={styles.volunteerCardText}>
+                <Text style={styles.volunteerCardTitle}>Become a Volunteer</Text>
+                <Text style={styles.volunteerCardSubtitle}>
+                  Help animals in need and earn karma points
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color={colors.white} />
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Menu Items */}
-        <View style={[styles.menuContainer, !user?.isVolunteer && { marginTop: -20 }]}>
+        <View style={[styles.menuContainer, !user?.isVolunteer && { marginTop: 16 }]}>
           {menuItems.filter((item) => item.show !== false).map((item, index) => (
             <TouchableOpacity
               key={item.id}
@@ -868,6 +928,7 @@ const ProfileScreen = ({ navigation }) => {
           ))}
         </View>
 
+
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
           <Ionicons name="log-out-outline" size={22} color={colors.error} />
@@ -881,6 +942,71 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.appTagline}>Making a difference, one paw at a time 🐾</Text>
         </View>
       </ScrollView>
+
+      {/* Volunteer Registration Modal */}
+      <Modal
+        visible={showVolunteerModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowVolunteerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalIconContainer}>
+                <Ionicons name="heart" size={40} color={colors.white} />
+              </View>
+              <Text style={styles.modalTitle}>Join Our Volunteer Community</Text>
+              <Text style={styles.modalSubtitle}>
+                Make a real difference in the lives of animals in your community
+              </Text>
+            </View>
+
+            <View style={styles.modalBenefits}>
+              <View style={styles.benefitItem}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.sage} />
+                <Text style={styles.benefitText}>Respond to animal emergencies nearby</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.sage} />
+                <Text style={styles.benefitText}>Earn karma points for completed tasks</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.sage} />
+                <Text style={styles.benefitText}>Unlock badges and climb the leaderboard</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.sage} />
+                <Text style={styles.benefitText}>Connect with fellow animal lovers</Text>
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowVolunteerModal(false)}
+                disabled={isRegistering}
+              >
+                <Text style={styles.modalCancelText}>Maybe Later</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleBecomeVolunteer}
+                disabled={isRegistering}
+              >
+                {isRegistering ? (
+                  <ActivityIndicator color={colors.white} size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="heart" size={18} color={colors.white} />
+                    <Text style={styles.modalConfirmText}>Join Now</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1065,6 +1191,139 @@ const styles = StyleSheet.create({
     color: colors.textGrey,
     marginTop: 6,
     fontStyle: "italic",
+  },
+
+  // --- VOLUNTEER CARD STYLES ---
+  volunteerCard: {
+    marginHorizontal: 20,
+    marginTop: -20,
+    marginBottom: -10,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  volunteerCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  volunteerIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  volunteerCardText: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  volunteerCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.white,
+    marginBottom: 4,
+  },
+  volunteerCardSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+  },
+
+  // --- MODAL STYLES ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    width: '100%',
+    maxWidth: 360,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    backgroundColor: colors.sage,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.white,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalBenefits: {
+    padding: 24,
+    paddingBottom: 16,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  benefitText: {
+    fontSize: 14,
+    color: colors.textDark,
+    marginLeft: 12,
+    flex: 1,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingTop: 0,
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.offWhite,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textGrey,
+  },
+  modalConfirmButton: {
+    flex: 1.5,
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  modalConfirmText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.white,
   },
 });
 
