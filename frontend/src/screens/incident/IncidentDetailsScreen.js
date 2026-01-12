@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { incidentsAPI } from '../../services/api';
@@ -60,6 +62,38 @@ const IncidentDetailsScreen = ({ route, navigation }) => {
       default:
         return theme.colors.gray500;
     }
+  };
+
+  const handleNavigateToLocation = () => {
+    if (!incident) return;
+    
+    const location = incident.location?.coordinates;
+    if (!location || location.length < 2) {
+      Alert.alert('Error', 'Location coordinates not available for this incident');
+      return;
+    }
+
+    const latitude = location[1];
+    const longitude = location[0];
+    const label = encodeURIComponent(incident.address || 'Incident Location');
+
+    // Open in Google Maps
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}&q=${label}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+    });
+
+    const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(webUrl);
+      }
+    }).catch(() => {
+      Linking.openURL(webUrl);
+    });
   };
 
   if (loading) {
@@ -126,6 +160,16 @@ const IncidentDetailsScreen = ({ route, navigation }) => {
             <Ionicons name="location" size={20} color={theme.colors.primary} />
             <Text style={styles.address}>{incident.address || 'Location not available'}</Text>
           </View>
+          
+          {/* Navigate Button */}
+          <TouchableOpacity 
+            style={styles.navigateButton} 
+            onPress={handleNavigateToLocation}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="navigate" size={22} color="#FFFFFF" />
+            <Text style={styles.navigateButtonText}>Navigate to Location</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -327,6 +371,22 @@ const styles = StyleSheet.create({
   resolvedDate: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.textSecondary,
+  },
+  navigateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4285F4', // Google Maps blue
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: theme.borderRadius.md,
+    marginTop: theme.spacing.md,
+    gap: 10,
+  },
+  navigateButtonText: {
+    color: '#FFFFFF',
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.bold,
   },
 });
 

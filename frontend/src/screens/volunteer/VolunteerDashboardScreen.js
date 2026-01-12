@@ -11,6 +11,8 @@ import {
   Alert,
   Modal,
   TextInput,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -186,6 +188,38 @@ const VolunteerDashboardScreen = ({ navigation }) => {
     }
   };
 
+  const handleNavigateToLocation = (task) => {
+    const location = task.location?.coordinates;
+    if (!location || location.length < 2) {
+      Alert.alert('Error', 'Location coordinates not available for this incident');
+      return;
+    }
+
+    const latitude = location[1];
+    const longitude = location[0];
+    const label = encodeURIComponent(task.address || 'Incident Location');
+
+    // Open in Google Maps
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}&q=${label}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+    });
+
+    const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        // Fallback to web Google Maps
+        Linking.openURL(webUrl);
+      }
+    }).catch(() => {
+      // Fallback to web Google Maps
+      Linking.openURL(webUrl);
+    });
+  };
+
   const renderTaskCard = (task) => (
     <View key={task._id} style={styles.taskCard}>
       <View style={[styles.priorityIndicator, {
@@ -218,7 +252,7 @@ const VolunteerDashboardScreen = ({ navigation }) => {
           {(() => {
             // Check if assignedVolunteers exists and has entries
             if (!task.assignedVolunteers || task.assignedVolunteers.length === 0) {
-              // Not assigned to anyone - show accept button
+              // Not assigned to anyone - show accept and view buttons
               return (
                 <>
                   <TouchableOpacity
@@ -247,7 +281,7 @@ const VolunteerDashboardScreen = ({ navigation }) => {
             });
             
             if (isAssignedToMe) {
-              // Assigned to me - show resolve button
+              // Assigned to me - show resolve and view buttons
               return (
                 <>
                   <TouchableOpacity
@@ -255,7 +289,7 @@ const VolunteerDashboardScreen = ({ navigation }) => {
                     onPress={() => handleCompleteTask(task)}
                   >
                     <Ionicons name="checkmark-circle" size={18} color={theme.colors.white} />
-                    <Text style={styles.taskButtonText}>Mark Resolved</Text>
+                    <Text style={styles.taskButtonText}>Resolve</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
@@ -664,6 +698,9 @@ const styles = StyleSheet.create({
   },
   acceptButton: {
     backgroundColor: theme.colors.primary,
+  },
+  navigateButton: {
+    backgroundColor: '#4285F4', // Google Maps blue
   },
   viewButton: {
     backgroundColor: theme.colors.white,
