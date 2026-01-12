@@ -141,20 +141,12 @@ const ReportIncidentScreen = ({ navigation }) => {
       });
 
       if (response.data.success) {
+        // Set AI result so it displays on the screen
         setAiResult(response.data.incident.aiAnalysis);
+        // Show success toast but don't navigate away
         Alert.alert(
-          'Incident Reported Successfully',
-          `Case ID: ${response.data.incident._id}\nPriority: ${response.data.incident.aiAnalysis.priority.toUpperCase()}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setPhoto(null);
-                setAiResult(null);
-                navigation.navigate('Home');
-              },
-            },
-          ]
+          '✅ Incident Reported!',
+          'Your report has been submitted. Scroll down to see the AI analysis.'
         );
       }
     } catch (error) {
@@ -284,25 +276,59 @@ const ReportIncidentScreen = ({ navigation }) => {
             </View>
           )}
 
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={submitReport}
-            disabled={analyzing}
-          >
-            {analyzing ? (
-              <ActivityIndicator color={theme.colors.white} />
-            ) : (
-              <>
-                <Ionicons name="send" size={20} color={theme.colors.white} />
-                <Text style={styles.submitText}>Submit Report</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {/* Show Submit button only if AI result not yet received */}
+          {!aiResult && (
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={submitReport}
+              disabled={analyzing}
+            >
+              {analyzing ? (
+                <ActivityIndicator color={theme.colors.white} />
+              ) : (
+                <>
+                  <Ionicons name="send" size={20} color={theme.colors.white} />
+                  <Text style={styles.submitText}>Submit Report</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity style={styles.retakeButton} onPress={retake}>
-            <Ionicons name="refresh" size={20} color={theme.colors.gray600} />
-            <Text style={styles.retakeText}>Retake Photo</Text>
-          </TouchableOpacity>
+          {/* Show Done button after AI analysis is received */}
+          {aiResult && !analyzing && (
+            <>
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => {
+                  setPhoto(null);
+                  setAiResult(null);
+                  navigation.navigate('Home');
+                }}
+              >
+                <Ionicons name="checkmark-circle" size={22} color={theme.colors.white} />
+                <Text style={styles.doneButtonText}>Done - Go to Home</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.reportAnotherButton}
+                onPress={() => {
+                  setPhoto(null);
+                  setAiResult(null);
+                }}
+              >
+                <Ionicons name="add-circle" size={20} color={theme.colors.primary} />
+                <Text style={styles.reportAnotherText}>Report Another Incident</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* Show retake only if not yet submitted */}
+          {!aiResult && (
+            <TouchableOpacity style={styles.retakeButton} onPress={retake}>
+              <Ionicons name="refresh" size={20} color={theme.colors.gray600} />
+              <Text style={styles.retakeText}>Retake Photo</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <View style={styles.actionButtons}>
@@ -597,6 +623,38 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     fontWeight: theme.typography.fontWeight.semibold,
     marginLeft: theme.spacing.sm,
+  },
+  doneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.success,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginTop: theme.spacing.lg,
+    gap: theme.spacing.sm,
+  },
+  doneButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+  },
+  reportAnotherButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    gap: theme.spacing.sm,
+  },
+  reportAnotherText: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   instructionsCard: {
     backgroundColor: theme.colors.white,

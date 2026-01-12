@@ -8,15 +8,22 @@ class GeminiService {
   }
 
   initialize() {
+    console.log('🔧 Initializing Gemini service...');
+    console.log('🔑 GEMINI_API_KEY present:', process.env.GEMINI_API_KEY ? 'YES (length: ' + process.env.GEMINI_API_KEY.length + ')' : 'NO');
+    
     if (!process.env.GEMINI_API_KEY) {
       console.warn('⚠️  GEMINI_API_KEY not found. AI features will be disabled.');
       return;
     }
 
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // Use gemini-1.5-flash for better availability and speed
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    console.log('✅ Gemini AI service initialized (gemini-1.5-flash)');
+    try {
+      this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      // Use gemini-1.5-flash for better availability and speed
+      this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      console.log('✅ Gemini AI service initialized (gemini-1.5-flash)');
+    } catch (error) {
+      console.error('❌ Failed to initialize Gemini:', error.message);
+    }
   }
 
   async chat(message, history = []) {
@@ -74,7 +81,11 @@ class GeminiService {
   }
 
   async analyzeIncidentImage(imageBase64) {
+    console.log('🔍 analyzeIncidentImage called');
+    console.log('🔍 Model initialized:', this.model ? 'YES' : 'NO');
+    
     if (!this.model) {
+      console.log('⚠️ Model not initialized, returning mock analysis');
       return this.getMockAnalysis();
     }
 
@@ -140,7 +151,12 @@ Respond in JSON format:
 
       return this.getMockAnalysis();
     } catch (error) {
-      console.error('Error analyzing image with Gemini:', error);
+      console.error('❌ Error analyzing image with Gemini:');
+      console.error('   Error name:', error.name);
+      console.error('   Error message:', error.message);
+      if (error.response) {
+        console.error('   API Response error:', error.response);
+      }
       return this.getMockAnalysis();
     }
   }
