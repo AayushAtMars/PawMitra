@@ -1,8 +1,8 @@
 import Incident from '../models/Incident.js';
 import User from '../models/User.js';
 import cloudinaryService from '../services/cloudinaryService.js';
-// import geminiService from '../services/geminiService.js';
-import openAIService from '../services/openaiService.js';
+import geminiService from '../services/geminiService.js';
+// import openAIService from '../services/openaiService.js';
 
 // Create new incident
 export const createIncident = async (req, res) => {
@@ -24,8 +24,8 @@ export const createIncident = async (req, res) => {
     // Extract base64 data for AI analysis
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
-    // Analyze image with AI (Using Groq/OpenAI via openAIService)
-    const aiAnalysis = await openAIService.analyzeIncidentImage(base64Data);
+    // Analyze image with AI (Using Gemini)
+    const aiAnalysis = await geminiService.analyzeIncidentImage(base64Data);
 
     // Create incident
     const incident = await Incident.create({
