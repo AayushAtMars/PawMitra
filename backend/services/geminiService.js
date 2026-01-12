@@ -18,9 +18,9 @@ class GeminiService {
 
     try {
       this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      // Use gemini-1.5-flash for better availability and speed
-      this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      console.log('✅ Gemini AI service initialized (gemini-1.5-flash)');
+      // Use gemini-2.0-flash-exp for best availability and vision support
+      this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      console.log('✅ Gemini AI service initialized (gemini-2.0-flash-exp)');
     } catch (error) {
       console.error('❌ Failed to initialize Gemini:', error.message);
     }
