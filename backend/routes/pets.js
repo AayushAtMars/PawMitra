@@ -7,7 +7,8 @@ import {
   expressInterest,
   reportLostFound,
   getLostFoundPets,
-  getPetStats
+  getPetStats,
+  deletePet
 } from '../controllers/petController.js';
 
 const router = express.Router();
@@ -46,5 +47,10 @@ router.post('/:id/interest', authenticate, expressInterest);
 // @desc    Report lost/found pet
 // @access  Private
 router.post('/report-lost-found', authenticate, reportLostFound);
+
+// @route   DELETE /api/pets/:id
+// @desc    Delete a pet
+// @access  Private
+router.delete('/:id', authenticate, deletePet);
 
 export default router;

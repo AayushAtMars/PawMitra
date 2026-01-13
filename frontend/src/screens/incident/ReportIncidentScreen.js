@@ -119,8 +119,26 @@ const ReportIncidentScreen = ({ navigation }) => {
   };
 
   const submitReport = async () => {
-    if (!photo || !location) {
-      Alert.alert('Error', 'Photo and location are required');
+    if (!photo) {
+      Alert.alert('Error', 'Please take a photo or select one from gallery');
+      return;
+    }
+
+    if (!location) {
+      Alert.alert(
+        'Location Required',
+        'We could not fetch your GPS location. Please enable location services or enter the address manually.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Enter Manually',
+            onPress: () => {
+              setUseManualLocation(true);
+              setShowLocationModal(true);
+            }
+          }
+        ]
+      );
       return;
     }
 
@@ -302,11 +320,11 @@ const ReportIncidentScreen = ({ navigation }) => {
                 onPress={() => {
                   setPhoto(null);
                   setAiResult(null);
-                  navigation.navigate('Home');
+                  // Stays on screen for new report
                 }}
               >
-                <Ionicons name="checkmark-circle" size={22} color={theme.colors.white} />
-                <Text style={styles.doneButtonText}>Done - Go to Home</Text>
+                <Ionicons name="close-circle" size={22} color={theme.colors.white} />
+                <Text style={styles.doneButtonText}>Close & New Report</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

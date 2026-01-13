@@ -105,9 +105,12 @@ export const createIncident = async (req, res) => {
 // Get all incidents with filters
 export const getIncidents = async (req, res) => {
   try {
-    const { status, priority, category, limit = 50, page = 1 } = req.query;
+    const { status, priority, category, reportedBy, limit = 50, page = 1 } = req.query;
 
     const query = {};
+    if (reportedBy) {
+      query.reportedBy = reportedBy;
+    }
     if (status) {
       if (status === 'active') {
         query.status = { $ne: 'resolved' };

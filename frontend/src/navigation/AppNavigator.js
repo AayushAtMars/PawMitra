@@ -323,6 +323,8 @@
 
 // export default AppNavigator;
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
@@ -371,6 +373,7 @@ const Tab = createBottomTabNavigator();
 /* ================= TAB NAVIGATOR ================= */
 const MainTabs = () => {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -380,8 +383,8 @@ const MainTabs = () => {
         tabBarInactiveTintColor: theme.colors.gray400,
         tabBarStyle: {
           backgroundColor: theme.colors.white,
-          height: 60,
-          paddingBottom: 6,
+          height: 60 + insets.bottom,
+          paddingBottom: 6 + insets.bottom,
           borderTopColor: theme.colors.gray200,
         },
         tabBarIcon: ({ focused, color, size }) => {

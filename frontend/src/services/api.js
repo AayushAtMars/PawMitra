@@ -84,6 +84,7 @@ export const petsAPI = {
   expressInterest: (id, data) => api.post(`/pets/${id}/interest`, data),
   reportLostFound: (data) => api.post('/pets/report-lost-found', data),
   getLostFound: (params) => api.get('/pets/lost-found', { params }),
+  delete: (id) => api.delete(`/pets/${id}`),
 };
 
 export const marketplaceAPI = {

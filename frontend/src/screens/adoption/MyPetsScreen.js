@@ -61,6 +61,7 @@ const MyPetsScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              await petsAPI.delete(pet._id);
               Alert.alert('Success', 'Pet removed');
               fetchMyPets();
             } catch (error) {

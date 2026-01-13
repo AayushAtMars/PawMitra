@@ -1,31 +1,68 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { incidentsAPI } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import theme from "../../theme";
 
 const MyReportsScreen = ({ navigation }) => {
-  // Mock Data
-  const reports = [
-    { id: "1", title: "Injured Dog at Park", date: "2025-10-24", status: "Resolved", location: "Central Park" },
-    { id: "2", title: "Stray Cat Colony", date: "2025-10-20", status: "Pending", location: "Sector 4" },
-  ];
+  const { user } = useAuth();
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchMyReports();
+  }, []);
+
+  const fetchMyReports = async () => {
+    try {
+      setLoading(true);
+      const response = await incidentsAPI.getAll({ reportedBy: user.id });
+      setReports(response.data.incidents || []);
+    } catch (error) {
+      console.error("Error fetching my reports:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchMyReports();
+  };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('IncidentDetails', { incidentId: item._id })}
+    >
       <View style={styles.cardHeader}>
-        <Text style={styles.reportTitle}>{item.title}</Text>
-        <View style={[styles.badge, item.status === "Resolved" ? styles.badgeSuccess : styles.badgePending]}>
-          <Text style={[styles.badgeText, item.status === "Resolved" ? styles.textSuccess : styles.textPending]}>
-            {item.status}
+        <Text style={styles.reportTitle} numberOfLines={1}>
+          {item.aiAnalysis?.category ? item.aiAnalysis.category.replace('_', ' ').toUpperCase() : 'Incident Report'}
+        </Text>
+        <View style={[styles.badge, item.status === "resolved" ? styles.badgeSuccess : styles.badgePending]}>
+          <Text style={[styles.badgeText, item.status === "resolved" ? styles.textSuccess : styles.textPending]}>
+            {item.status.toUpperCase()}
           </Text>
         </View>
       </View>
+
+      <Text style={styles.description} numberOfLines={2}>
+        {item.description || item.aiAnalysis?.description}
+      </Text>
+
       <View style={styles.row}>
         <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-        <Text style={styles.metaText}>{item.date}</Text>
+        <Text style={styles.metaText}>
+          {new Date(item.createdAt).toLocaleDateString()}
+        </Text>
         <View style={styles.dot} />
         <Ionicons name="location-outline" size={14} color="#6B7280" />
-        <Text style={styles.metaText}>{item.location}</Text>
+        <Text style={styles.metaText} numberOfLines={1}>
+          {item.address || 'Location not available'}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -39,12 +76,26 @@ const MyReportsScreen = ({ navigation }) => {
         <Text style={styles.headerTitle}>My Reports</Text>
         <View style={{ width: 24 }} />
       </View>
-      <FlatList
-        data={reports}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-      />
+
+      {loading && !refreshing ? (
+        <View style={styles.center}>
+          <Text>Loading reports...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={reports}
+          renderItem={renderItem}
+          keyExtractor={item => item._id}
+          contentContainerStyle={styles.list}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <View style={styles.center}>
+              <Text style={{ color: theme.colors.gray500 }}>No reports submitted yet.</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };

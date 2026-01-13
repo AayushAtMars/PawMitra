@@ -76,8 +76,15 @@ export const getPets = async (req, res) => {
 
     const query = { isLostFound: false };
     if (species) query.species = species;
-    if (status) query.status = status;
-    else query.status = 'available'; // Default to available pets
+
+    // If owner is specified, filter by owner and ignore status (show all their pets)
+    if (req.query.owner) {
+      query.listedBy = req.query.owner;
+    } else {
+      // Default behavior for public listing: showing available pets
+      if (status) query.status = status;
+      else query.status = 'available';
+    }
 
     const pets = await Pet.find(query)
       .populate('listedBy', 'name avatar')
@@ -295,5 +302,30 @@ export const getPetStats = async (req, res) => {
   } catch (error) {
     console.error('Get pet stats error:', error);
     res.status(500).json({ error: 'Failed to fetch pet stats' });
+  }
+};
+// Delete a pet
+export const deletePet = async (req, res) => {
+  try {
+    const pet = await Pet.findById(req.params.id);
+
+    if (!pet) {
+      return res.status(404).json({ error: 'Pet not found' });
+    }
+
+    // Check ownership
+    if (pet.listedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Not authorized to delete this pet' });
+    }
+
+    await pet.deleteOne();
+
+    res.json({
+      success: true,
+      message: 'Pet deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete pet error:', error);
+    res.status(500).json({ error: 'Failed to delete pet' });
   }
 };
