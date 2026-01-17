@@ -300,10 +300,11 @@ export const getPetStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get pet stats error:', error);
+    console.error('Get stats error:', error);
     res.status(500).json({ error: 'Failed to fetch pet stats' });
   }
 };
+
 // Delete a pet
 export const deletePet = async (req, res) => {
   try {
@@ -314,15 +315,19 @@ export const deletePet = async (req, res) => {
     }
 
     // Check ownership
+    // Convert both to strings to ensure correct comparison
     if (pet.listedBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Not authorized to delete this pet' });
     }
+
+    // Delete photos from Cloudinary (optional but recommended)
+    // if (pet.photos && pet.photos.length > 0) { ... }
 
     await pet.deleteOne();
 
     res.json({
       success: true,
-      message: 'Pet deleted successfully'
+      message: 'Pet removed successfully'
     });
   } catch (error) {
     console.error('Delete pet error:', error);

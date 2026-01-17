@@ -1,7 +1,607 @@
-// UI-ONLY UPDATE: Redesigned adoption screen with search, filters, grid/list layouts, and featured carousel
-// Preserves all existing API calls, navigation, and business logic
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// // UI-ONLY UPDATE: Redesigned adoption screen with search, filters, grid/list layouts, and featured carousel
+// // Preserves all existing API calls, navigation, and business logic
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { Ionicons } from "@expo/vector-icons";
+// import React, { useEffect, useState } from "react";
+// import {
+//   ActivityIndicator,
+//   Alert,
+//   Dimensions,
+//   FlatList,
+//   Platform,
+//   RefreshControl,
+//   ScrollView,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   View,
+// } from "react-native";
+// import { petsAPI } from "../../services/api";
+// import theme from "../../theme";
+// import PetCard from "../../components/PetCard";
+// import AdoptionFilters from "../../components/AdoptionFilters";
+// import PetDetailsModal from "../../components/PetDetailsModal";
+
+// const { width } = Dimensions.get("window");
+// const isWeb = width > 768;
+
+// const AdoptionScreen = ({ navigation }) => {
+//   const [pets, setPets] = useState([]);
+//   const [filteredPets, setFilteredPets] = useState([]);
+//   const [featuredPets, setFeaturedPets] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [refreshing, setRefreshing] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [showFilters, setShowFilters] = useState(false);
+//   const [selectedPet, setSelectedPet] = useState(null);
+//   const [viewMode, setViewMode] = useState("grid"); // grid or list
+//   const [filters, setFilters] = useState({
+//     species: "all",
+//     gender: "all",
+//     size: "all",
+//     age: "all",
+//     vaccinated: "all",
+//   });
+
+//   useEffect(() => {
+//     loadPets();
+//   }, []);
+
+//   useEffect(() => {
+//     applyFilters();
+//   }, [searchQuery, filters, pets]);
+
+//   const loadPets = async () => {
+//     try {
+//       setLoading(true);
+//       const response = await petsAPI.getAll({ status: "available" });
+
+//       if (response.data.success || Array.isArray(response.data.pets)) {
+//         const allPets = response.data.pets || [];
+//         setPets(allPets);
+//         // Featured: first 5 pets
+//         setFeaturedPets(allPets.slice(0, 5));
+//       }
+//     } catch (error) {
+//       console.error("Error loading pets:", error);
+//       Alert.alert("Error", "Failed to load pets");
+//     } finally {
+//       setLoading(false);
+//       setRefreshing(false);
+//     }
+//   };
+
+//   const applyFilters = () => {
+//     let filtered = [...pets];
+
+//     // Search
+//     if (searchQuery) {
+//       filtered = filtered.filter(
+//         (p) =>
+//           p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//           p.species?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//           p.breed?.toLowerCase().includes(searchQuery.toLowerCase())
+//       );
+//     }
+
+//     // Species filter
+//     if (filters.species !== "all") {
+//       filtered = filtered.filter((p) => p.species === filters.species);
+//     }
+
+//     // Gender filter
+//     if (filters.gender !== "all") {
+//       filtered = filtered.filter((p) => p.gender === filters.gender);
+//     }
+
+//     // Size filter (if available in pet data)
+//     if (filters.size !== "all") {
+//       filtered = filtered.filter((p) => p.size === filters.size);
+//     }
+
+//     // Age filter
+//     if (filters.age !== "all") {
+//       filtered = filtered.filter((p) => {
+//         if (!p.age) return false;
+//         const ageStr = String(p.age).toLowerCase();
+//         if (filters.age === "puppy" || filters.age === "kitten") {
+//           return ageStr.includes("month") || ageStr.includes("puppy") || ageStr.includes("kitten");
+//         }
+//         if (filters.age === "adult") {
+//           return ageStr.includes("year") && !ageStr.includes("senior");
+//         }
+//         if (filters.age === "senior") {
+//           return ageStr.includes("senior") || parseInt(ageStr) > 7;
+//         }
+//         return true;
+//       });
+//     }
+
+//     // Vaccinated filter
+//     if (filters.vaccinated === "yes") {
+//       filtered = filtered.filter((p) =>
+//         p.healthStatus?.toLowerCase().includes("vaccinated")
+//       );
+//     }
+
+//     setFilteredPets(filtered);
+//   };
+
+//   const handleSearch = (text) => {
+//     setSearchQuery(text);
+//   };
+
+//   const handleFilterChange = (key, value) => {
+//     setFilters((prev) => ({ ...prev, [key]: value }));
+//   };
+
+//   const handleClearFilters = () => {
+//     setFilters({
+//       species: "all",
+//       gender: "all",
+//       size: "all",
+//       age: "all",
+//       vaccinated: "all",
+//     });
+//     setSearchQuery("");
+//   };
+
+//   const handleRefresh = () => {
+//     setRefreshing(true);
+//     loadPets();
+//   };
+
+//   const handlePetPress = (pet) => {
+//     setSelectedPet(pet);
+//   };
+
+//   const handleFavorite = async (pet) => {
+//     try {
+//       const savedData = await AsyncStorage.getItem("savedPets");
+//       let savedList = savedData ? JSON.parse(savedData) : [];
+
+//       const exists = savedList.find((p) => p._id === pet._id);
+//       if (exists) {
+//         savedList = savedList.filter((p) => p._id !== pet._id);
+//         Alert.alert("Removed", `${pet.name} removed from favorites`);
+//       } else {
+//         savedList.push(pet);
+//         Alert.alert("Saved!", `${pet.name} added to favorites`);
+//       }
+
+//       await AsyncStorage.setItem("savedPets", JSON.stringify(savedList));
+//     } catch (error) {
+//       console.error("Error saving favorite:", error);
+//     }
+//   };
+
+//   const handleRequestAdopt = async (pet) => {
+//     Alert.alert(
+//       "Request to Adopt",
+//       `Send adoption request for ${pet.name}?`,
+//       [
+//         { text: "Cancel", style: "cancel" },
+//         {
+//           text: "Send Request",
+//           onPress: async () => {
+//             try {
+//               await petsAPI.expressInterest(pet._id, {
+//                 message: "I would like to adopt this pet",
+//               });
+//               Alert.alert("Success", "Adoption request sent!");
+//               setSelectedPet(null);
+//             } catch (error) {
+//               console.error("Error sending request:", error);
+//               Alert.alert("Error", "Failed to send request");
+//             }
+//           },
+//         },
+//       ]
+//     );
+//   };
+
+//   const handleContactOwner = (pet) => {
+//     Alert.alert("Contact Owner", "Contact feature coming soon!");
+//   };
+
+//   const renderFeaturedSection = () => {
+//     if (featuredPets.length === 0) return null;
+
+//     return (
+//       <View style={styles.featuredSection}>
+//         <Text style={styles.sectionTitle}>Featured Pets</Text>
+//         <FlatList
+//           horizontal
+//           data={featuredPets}
+//           keyExtractor={(item) => `featured-${item._id}`}
+//           renderItem={({ item }) => (
+//             <PetCard
+//               pet={item}
+//               onPress={handlePetPress}
+//               onFavorite={handleFavorite}
+//               style={styles.featuredCard}
+//             />
+//           )}
+//           showsHorizontalScrollIndicator={false}
+//           contentContainerStyle={styles.featuredContent}
+//         />
+//       </View>
+//     );
+//   };
+
+//   const renderPetItem = ({ item }) => (
+//     <PetCard
+//       pet={item}
+//       onPress={handlePetPress}
+//       onFavorite={handleFavorite}
+//       style={viewMode === "grid" ? styles.gridCard : styles.listCard}
+//     />
+//   );
+
+//   const renderEmpty = () => (
+//     <View style={styles.emptyContainer}>
+//       <Ionicons name="paw-outline" size={64} color={theme.colors.gray300} />
+//       <Text style={styles.emptyTitle}>No Pets Found</Text>
+//       <Text style={styles.emptyText}>
+//         {searchQuery || Object.values(filters).some((f) => f !== "all")
+//           ? "Try adjusting your filters"
+//           : "Check back later for new pets"}
+//       </Text>
+//       {(searchQuery || Object.values(filters).some((f) => f !== "all")) && (
+//         <TouchableOpacity style={styles.clearButton} onPress={handleClearFilters}>
+//           <Text style={styles.clearButtonText}>Clear Filters</Text>
+//         </TouchableOpacity>
+//       )}
+//     </View>
+//   );
+
+//   if (loading) {
+//     return (
+//       <View style={styles.loadingContainer}>
+//         <ActivityIndicator size="large" color={theme.colors.primary} />
+//         <Text style={styles.loadingText}>Loading pets...</Text>
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <View style={styles.container}>
+//       {/* Header */}
+//       <View style={styles.header}>
+//         <Text style={styles.title}>Find Your Companion</Text>
+//         <View style={styles.headerActions}>
+//           <TouchableOpacity
+//             style={styles.iconButton}
+//             onPress={() => navigation.navigate("MyPets")}
+//           >
+//             <Ionicons name="list" size={24} color={theme.colors.primary} />
+//           </TouchableOpacity>
+//           <TouchableOpacity
+//             style={styles.iconButton}
+//             onPress={() => navigation.navigate("AddPet")}
+//           >
+//             <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+
+//       {/* Search Bar */}
+//       <View style={styles.searchContainer}>
+//         <Ionicons name="search" size={20} color={theme.colors.gray400} />
+//         <TextInput
+//           style={styles.searchInput}
+//           placeholder="Search by name, breed..."
+//           value={searchQuery}
+//           onChangeText={handleSearch}
+//           placeholderTextColor={theme.colors.gray400}
+//         />
+//         {searchQuery.length > 0 && (
+//           <TouchableOpacity onPress={() => setSearchQuery("")}>
+//             <Ionicons name="close-circle" size={20} color={theme.colors.gray400} />
+//           </TouchableOpacity>
+//         )}
+//         <TouchableOpacity
+//           style={styles.filterButton}
+//           onPress={() => setShowFilters(true)}
+//         >
+//           <Ionicons name="options" size={20} color={theme.colors.white} />
+//         </TouchableOpacity>
+//       </View>
+
+//       {/* Active Filter Chips */}
+//       {Object.values(filters).some((f) => f !== "all") && (
+//         <ScrollView
+//           horizontal
+//           showsHorizontalScrollIndicator={false}
+//           style={styles.activeFilters}
+//           contentContainerStyle={styles.activeFiltersContent}
+//         >
+//           {Object.entries(filters).map(([key, value]) => {
+//             if (value === "all") return null;
+//             return (
+//               <View key={key} style={styles.activeFilterChip}>
+//                 <Text style={styles.activeFilterText}>
+//                   {key}: {value}
+//                 </Text>
+//                 <TouchableOpacity
+//                   onPress={() => handleFilterChange(key, "all")}
+//                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+//                 >
+//                   <Ionicons name="close" size={16} color={theme.colors.white} />
+//                 </TouchableOpacity>
+//               </View>
+//             );
+//           })}
+//         </ScrollView>
+//       )}
+
+//       {/* View Toggle */}
+//       <View style={styles.viewToggle}>
+//         <Text style={styles.resultsCount}>
+//           {filteredPets.length} {filteredPets.length === 1 ? "pet" : "pets"} available
+//         </Text>
+//         <View style={styles.toggleButtons}>
+//           <TouchableOpacity
+//             style={[styles.toggleButton, viewMode === "grid" && styles.toggleButtonActive]}
+//             onPress={() => setViewMode("grid")}
+//           >
+//             <Ionicons
+//               name="grid"
+//               size={18}
+//               color={viewMode === "grid" ? theme.colors.white : theme.colors.gray600}
+//             />
+//           </TouchableOpacity>
+//           <TouchableOpacity
+//             style={[styles.toggleButton, viewMode === "list" && styles.toggleButtonActive]}
+//             onPress={() => setViewMode("list")}
+//           >
+//             <Ionicons
+//               name="list"
+//               size={18}
+//               color={viewMode === "list" ? theme.colors.white : theme.colors.gray600}
+//             />
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+
+//       {/* Pet List */}
+//       <FlatList
+//         data={filteredPets}
+//         renderItem={renderPetItem}
+//         keyExtractor={(item) => item._id}
+//         numColumns={viewMode === "grid" && !isWeb ? 2 : 1}
+//         key={viewMode} // Force re-render on view change
+//         ListHeaderComponent={renderFeaturedSection}
+//         ListEmptyComponent={renderEmpty}
+//         contentContainerStyle={styles.listContent}
+//         columnWrapperStyle={viewMode === "grid" && !isWeb ? styles.columnWrapper : null}
+//         refreshControl={
+//           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+//         }
+//         showsVerticalScrollIndicator={false}
+//       />
+
+//       {/* Filters Modal */}
+//       <AdoptionFilters
+//         visible={showFilters}
+//         filters={filters}
+//         onChangeFilter={handleFilterChange}
+//         onClear={handleClearFilters}
+//         onClose={() => setShowFilters(false)}
+//       />
+
+//       {/* Pet Details Modal */}
+//       {selectedPet && (
+//         <PetDetailsModal
+//           visible={!!selectedPet}
+//           pet={selectedPet}
+//           onClose={() => setSelectedPet(null)}
+//           onRequestAdopt={handleRequestAdopt}
+//           onContactOwner={handleContactOwner}
+//           onFavorite={handleFavorite}
+//         />
+//       )}
+//     </View>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#FFF8F0", // Updated to match Login/Register
+//   },
+//   loadingContainer: {
+//     flex: 1,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     backgroundColor: "#FFF8F0",
+//   },
+//   loadingText: {
+//     marginTop: theme.spacing.md,
+//     fontSize: theme.typography.fontSize.md,
+//     color: "#888",
+//   },
+//   header: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "center",
+//     padding: theme.spacing.lg,
+//     paddingTop: Platform.OS === 'ios' ? 60 : 40,
+//     backgroundColor: "transparent",
+//   },
+//   title: {
+//     fontSize: 24,
+//     fontWeight: "900",
+//     color: "#2D2D2D",
+//   },
+//   headerActions: {
+//     flexDirection: "row",
+//     gap: theme.spacing.sm,
+//   },
+//   iconButton: {
+//     padding: 8,
+//     backgroundColor: "#FFF",
+//     borderRadius: 12,
+//     ...theme.shadows.sm,
+//   },
+//   searchContainer: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     backgroundColor: "#FFFFFF",
+//     marginHorizontal: theme.spacing.lg,
+//     marginBottom: theme.spacing.lg,
+//     paddingHorizontal: 16,
+//     borderRadius: 16,
+//     height: 56,
+//     borderWidth: 1,
+//     borderColor: "#EFEFEF",
+//     // Shadow properties refined for web/mobile compatibility
+//     ...(Platform.OS === 'web' ? {
+//       boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)'
+//     } : {
+//       shadowColor: "#000",
+//       shadowOffset: { width: 0, height: 2 },
+//       shadowOpacity: 0.03,
+//       shadowRadius: 8,
+//       elevation: 2,
+//     })
+//   },
+//   searchInput: {
+//     flex: 1,
+//     height: "100%",
+//     fontSize: 16,
+//     color: "#333",
+//     marginLeft: 8,
+//   },
+//   filterButton: {
+//     backgroundColor: "#2D2D2D",
+//     padding: 8,
+//     borderRadius: 10,
+//     marginLeft: theme.spacing.sm,
+//   },
+//   activeFilters: {
+//     marginHorizontal: theme.spacing.lg,
+//     marginBottom: theme.spacing.md,
+//   },
+//   activeFiltersContent: {
+//     gap: 8,
+//   },
+//   activeFilterChip: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     backgroundColor: "#F4A261",
+//     paddingHorizontal: 16,
+//     paddingVertical: 8,
+//     borderRadius: 20,
+//     gap: 6,
+//   },
+//   activeFilterText: {
+//     fontSize: 12,
+//     color: "#FFF",
+//     fontWeight: "600",
+//     textTransform: "capitalize",
+//   },
+//   viewToggle: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "center",
+//     paddingHorizontal: theme.spacing.lg,
+//     paddingBottom: theme.spacing.md,
+//   },
+//   resultsCount: {
+//     fontSize: 14,
+//     color: "#888",
+//     fontWeight: "600",
+//   },
+//   toggleButtons: {
+//     flexDirection: "row",
+//     gap: 8,
+//   },
+//   toggleButton: {
+//     padding: 8,
+//     borderRadius: 10,
+//     backgroundColor: "#EEE",
+//   },
+//   toggleButtonActive: {
+//     backgroundColor: "#2D2D2D",
+//   },
+//   featuredSection: {
+//     marginBottom: theme.spacing.xl,
+//   },
+//   sectionTitle: {
+//     fontSize: 20,
+//     fontWeight: "900",
+//     color: "#2D2D2D",
+//     marginBottom: theme.spacing.md,
+//     paddingHorizontal: theme.spacing.lg,
+//   },
+//   featuredContent: {
+//     paddingHorizontal: theme.spacing.lg,
+//   },
+//   featuredCard: {
+//     width: 260,
+//     marginRight: 16,
+//     borderRadius: 24,
+//     backgroundColor: "#FFF",
+//   },
+//   listContent: {
+//     paddingHorizontal: theme.spacing.lg,
+//     paddingBottom: 40,
+//   },
+//   columnWrapper: {
+//     justifyContent: "space-between",
+//     marginBottom: 20,
+//   },
+//   gridCard: {
+//     flex: 1,
+//     marginBottom: 16,
+//     marginHorizontal: 0,
+//     borderRadius: 20,
+//     backgroundColor: "#FFF",
+//   },
+//   listCard: {
+//     marginBottom: 16,
+//     borderRadius: 20,
+//     backgroundColor: "#FFF",
+//   },
+//   emptyContainer: {
+//     alignItems: "center",
+//     justifyContent: "center",
+//     paddingVertical: 60,
+//   },
+//   emptyTitle: {
+//     fontSize: 20,
+//     fontWeight: "800",
+//     color: "#2D2D2D",
+//     marginTop: 20,
+//   },
+//   emptyText: {
+//     fontSize: 14,
+//     color: "#888",
+//     marginTop: 8,
+//     textAlign: "center",
+//     lineHeight: 20,
+//   },
+//   clearButton: {
+//     marginTop: 24,
+//     backgroundColor: "#2D2D2D",
+//     paddingHorizontal: 30,
+//     paddingVertical: 12,
+//     borderRadius: 25,
+//   },
+//   clearButtonText: {
+//     color: "#FFF",
+//     fontSize: 16,
+//     fontWeight: "bold",
+//   },
+// });
+
+// export default AdoptionScreen;
+
+
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,14 +617,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AdoptionFilters from "../../components/AdoptionFilters";
+import PetCard from "../../components/PetCard";
+import PetDetailsModal from "../../components/PetDetailsModal";
 import { petsAPI } from "../../services/api";
 import theme from "../../theme";
-import PetCard from "../../components/PetCard";
-import AdoptionFilters from "../../components/AdoptionFilters";
-import PetDetailsModal from "../../components/PetDetailsModal";
 
 const { width } = Dimensions.get("window");
-const isWeb = width > 768;
+const isWeb = Platform.OS === "web" && width > 768;
 
 const AdoptionScreen = ({ navigation }) => {
   const [pets, setPets] = useState([]);
@@ -35,7 +635,7 @@ const AdoptionScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
-  const [viewMode, setViewMode] = useState("grid"); // grid or list
+  const [viewMode, setViewMode] = useState("grid");
   const [filters, setFilters] = useState({
     species: "all",
     gender: "all",
@@ -60,7 +660,6 @@ const AdoptionScreen = ({ navigation }) => {
       if (response.data.success || Array.isArray(response.data.pets)) {
         const allPets = response.data.pets || [];
         setPets(allPets);
-        // Featured: first 5 pets
         setFeaturedPets(allPets.slice(0, 5));
       }
     } catch (error) {
@@ -75,32 +674,27 @@ const AdoptionScreen = ({ navigation }) => {
   const applyFilters = () => {
     let filtered = [...pets];
 
-    // Search
     if (searchQuery) {
       filtered = filtered.filter(
         (p) =>
-          p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.species?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.breed?.toLowerCase().includes(searchQuery.toLowerCase())
+          p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+          || p.species?.toLowerCase().includes(searchQuery.toLowerCase())
+          || p.breed?.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
-    // Species filter
     if (filters.species !== "all") {
       filtered = filtered.filter((p) => p.species === filters.species);
     }
 
-    // Gender filter
     if (filters.gender !== "all") {
       filtered = filtered.filter((p) => p.gender === filters.gender);
     }
 
-    // Size filter (if available in pet data)
     if (filters.size !== "all") {
       filtered = filtered.filter((p) => p.size === filters.size);
     }
 
-    // Age filter
     if (filters.age !== "all") {
       filtered = filtered.filter((p) => {
         if (!p.age) return false;
@@ -118,11 +712,8 @@ const AdoptionScreen = ({ navigation }) => {
       });
     }
 
-    // Vaccinated filter
     if (filters.vaccinated === "yes") {
-      filtered = filtered.filter((p) =>
-        p.healthStatus?.toLowerCase().includes("vaccinated")
-      );
+      filtered = filtered.filter((p) => p.healthStatus?.toLowerCase().includes("vaccinated"));
     }
 
     setFilteredPets(filtered);
@@ -197,7 +788,7 @@ const AdoptionScreen = ({ navigation }) => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -264,6 +855,8 @@ const AdoptionScreen = ({ navigation }) => {
       </View>
     );
   }
+
+  const numColumns = viewMode === "grid" && !isWeb ? 2 : 1;
 
   return (
     <View style={styles.container}>
@@ -370,15 +963,13 @@ const AdoptionScreen = ({ navigation }) => {
         data={filteredPets}
         renderItem={renderPetItem}
         keyExtractor={(item) => item._id}
-        numColumns={viewMode === "grid" && !isWeb ? 2 : 1}
-        key={viewMode} // Force re-render on view change
+        numColumns={numColumns}
+        key={viewMode}
         ListHeaderComponent={renderFeaturedSection}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         columnWrapperStyle={viewMode === "grid" && !isWeb ? styles.columnWrapper : null}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         showsVerticalScrollIndicator={false}
       />
 
@@ -409,7 +1000,7 @@ const AdoptionScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF8F0", // Updated to match Login/Register
+    backgroundColor: "#FFF8F0",
   },
   loadingContainer: {
     flex: 1,
@@ -427,7 +1018,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: theme.spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
     backgroundColor: "transparent",
   },
   title: {
@@ -456,16 +1047,18 @@ const styles = StyleSheet.create({
     height: 56,
     borderWidth: 1,
     borderColor: "#EFEFEF",
-    // Shadow properties refined for web/mobile compatibility
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)'
-    } : {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.03,
-      shadowRadius: 8,
-      elevation: 2,
-    })
+    ...Platform.select({
+      web: {
+        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.03)",
+      },
+      default: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+    }),
   },
   searchInput: {
     flex: 1,
@@ -542,8 +1135,6 @@ const styles = StyleSheet.create({
   featuredCard: {
     width: 260,
     marginRight: 16,
-    borderRadius: 24,
-    backgroundColor: "#FFF",
   },
   listContent: {
     paddingHorizontal: theme.spacing.lg,
@@ -557,13 +1148,9 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 16,
     marginHorizontal: 0,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
   },
   listCard: {
     marginBottom: 16,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
   },
   emptyContainer: {
     alignItems: "center",
