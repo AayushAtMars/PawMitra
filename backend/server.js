@@ -28,6 +28,7 @@ import petRoutes from './routes/pets.js';
 import marketplaceRoutes from './routes/marketplace.js';
 import userRoutes from "./routes/userRoutes.js";
 import chatRoutes from './routes/chat.js';
+import adminRoutes from './routes/admin.js';
 
 // Load environment variables
 dotenv.config();
@@ -87,6 +88,7 @@ app.use('/api/pets', petRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use("/api/user", userRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

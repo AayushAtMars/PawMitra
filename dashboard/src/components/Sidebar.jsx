@@ -6,7 +6,8 @@ import {
     HeartIcon,
     UsersIcon,
     Cog6ToothIcon,
-    ArrowLeftOnRectangleIcon
+    ArrowLeftOnRectangleIcon,
+    CheckBadgeIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
@@ -15,6 +16,7 @@ const Sidebar = () => {
 
     const navigation = [
         { name: 'Overview', href: '/', icon: HomeIcon },
+        { name: 'Verifications', href: '/verifications', icon: CheckBadgeIcon },
         { name: 'Incidents', href: '/incidents', icon: ExclamationTriangleIcon },
         { name: 'Pets', href: '/pets', icon: HeartIcon },
         { name: 'Volunteers', href: '/volunteers', icon: UsersIcon },

@@ -67,7 +67,7 @@ const incidentSchema = new mongoose.Schema({
   // Status tracking
   status: {
     type: String,
-    enum: ['reported', 'volunteer_assigned', 'ngo_assigned', 'in_progress', 'resolved', 'closed'],
+    enum: ['reported', 'volunteer_assigned', 'ngo_assigned', 'in_progress', 'pending_verification', 'resolved', 'closed', 'rejected'],
     default: 'reported'
   },
 
@@ -111,6 +111,38 @@ const incidentSchema = new mongoose.Schema({
   outcome: {
     type: String,
     enum: ['rescued', 'treated', 'removed', 'false_alarm', 'other']
+  },
+
+  // Verification workflow (for admin approval)
+  verification: {
+    status: {
+      type: String,
+      enum: ['not_required', 'pending', 'approved', 'rejected'],
+      default: 'not_required'
+    },
+    submittedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    submittedAt: Date,
+    proofPhotos: [{
+      url: String,
+      publicId: String,
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    verifiedAt: Date,
+    rejectionReason: String,
+    karmaAwarded: {
+      type: Number,
+      default: 0
+    }
   }
 }, {
   timestamps: true

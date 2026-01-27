@@ -806,14 +806,21 @@ const ProfileScreen = ({ navigation }) => {
       title: "Add Pet for Adoption",
       icon: "add-circle-outline",
       onPress: () => navigation.navigate("AddPet"),
-      show: user?.role === "ngo" || user?.role === "volunteer",
+      show: true,  // Show for all users
     },
     {
       id: 5,
       title: "My Pets",
       icon: "paw-outline",
       onPress: () => navigation.navigate("MyPets"),
-      show: user?.role === "ngo" || user?.role === "volunteer",
+      show: true,  // Show for all users
+    },
+    {
+      id: 51,
+      title: "Adoption Requests",
+      icon: "mail-outline",
+      onPress: () => navigation.navigate("AdoptionRequests"),
+      show: true,
     },
     {
       id: 6,

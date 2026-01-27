@@ -6,6 +6,7 @@ import {
   getNearbyVolunteers,
   acceptTask,
   completeTask,
+  submitResolution,
   getLeaderboard,
   getVolunteerStats
 } from '../controllers/volunteerController.js';
@@ -32,8 +33,13 @@ router.get('/nearby', authenticate, getNearbyVolunteers);
 // @access  Private (Volunteer only)
 router.post('/accept-task', authenticate, isVolunteer, acceptTask);
 
+// @route   POST /api/volunteers/submit-resolution
+// @desc    Submit resolution with proof photos for admin verification
+// @access  Private (Volunteer only)
+router.post('/submit-resolution', authenticate, isVolunteer, submitResolution);
+
 // @route   POST /api/volunteers/complete-task
-// @desc    Complete incident task and earn karma
+// @desc    Complete incident task (legacy - now requires proof photos)
 // @access  Private (Volunteer only)
 router.post('/complete-task', authenticate, isVolunteer, completeTask);
 
@@ -48,3 +54,4 @@ router.get('/leaderboard', getLeaderboard);
 router.get('/stats', authenticate, getVolunteerStats);
 
 export default router;
+

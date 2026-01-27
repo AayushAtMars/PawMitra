@@ -310,16 +310,20 @@ const PetCard = ({ pet, onPress, onFavorite, style }) => {
           <View style={styles.detailRow}>
             <Ionicons name="calendar-outline" size={14} color={theme.colors.textSecondary} />
             <Text style={styles.detailText} numberOfLines={1}>
-              {String(pet.age)}
+              {typeof pet.age === 'object' ? `${pet.age.value || ''} ${pet.age.unit || ''}`.trim() : String(pet.age)}
             </Text>
           </View>
         )}
 
-        {pet.address && (
+        {(pet.address || pet.location?.address) && (
           <View style={styles.detailRow}>
             <Ionicons name="location-outline" size={14} color={theme.colors.textSecondary} />
             <Text style={styles.detailText} numberOfLines={1}>
-              {String(pet.address)}
+              {typeof pet.address === 'string' 
+                ? pet.address 
+                : (typeof pet.location === 'object' && pet.location?.address 
+                    ? pet.location.address 
+                    : 'Location available')}
             </Text>
           </View>
         )}

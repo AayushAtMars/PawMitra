@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AdminDashboard from './pages/AdminDashboard';
+import VerificationsPage from './pages/VerificationsPage';
 import Login from './pages/Login';
 import './index.css';
 
@@ -25,9 +26,18 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/verifications"
+          element={
+            <ProtectedRoute>
+              <VerificationsPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );
 }
 
 export default App;
+

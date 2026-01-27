@@ -73,6 +73,7 @@ export const volunteersAPI = {
   getNearby: (params) => api.get('/volunteers/nearby', { params }),
   acceptTask: (data) => api.post('/volunteers/accept-task', data),
   completeTask: (data) => api.post('/volunteers/complete-task', data),
+  submitResolution: (data) => api.post('/volunteers/submit-resolution', data),
   getLeaderboard: (params) => api.get('/volunteers/leaderboard', { params }),
   getStats: () => api.get('/volunteers/stats'),
 };

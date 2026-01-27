@@ -158,10 +158,18 @@ export const acceptTask = async (req, res) => {
   }
 };
 
-// Complete task
-export const completeTask = async (req, res) => {
+// Submit resolution for verification (replaces direct task completion)
+// Karma is NOT awarded here - only after admin verification
+export const submitResolution = async (req, res) => {
   try {
-    const { incidentId, notes, outcome } = req.body;
+    const { incidentId, notes, outcome, proofPhotos } = req.body;
+
+    // Validate proof photo is provided
+    if (!proofPhotos || proofPhotos.length === 0) {
+      return res.status(400).json({ 
+        error: 'Proof photo is required when marking a case as resolved' 
+      });
+    }
 
     const incident = await Incident.findById(incidentId);
 
@@ -178,46 +186,108 @@ export const completeTask = async (req, res) => {
       return res.status(400).json({ error: 'You are not assigned to this incident' });
     }
 
+    if (assignment.status === 'completed') {
+      return res.status(400).json({ error: 'You have already submitted a resolution for this incident' });
+    }
+
+    // Upload proof photos to Cloudinary
+    const uploadedPhotos = [];
+    for (const photo of proofPhotos) {
+      try {
+        // Check if it's a base64 string or already a URL
+        if (photo.startsWith('data:') || photo.startsWith('file:')) {
+          const cloudinaryService = (await import('../services/cloudinaryService.js')).default;
+          const uploaded = await cloudinaryService.uploadBase64Image(photo, 'pawmitra/resolutions');
+          uploadedPhotos.push({ 
+            url: uploaded.url, 
+            publicId: uploaded.publicId,
+            uploadedAt: new Date()
+          });
+        } else if (photo.startsWith('http')) {
+          // Already a URL, use as is
+          uploadedPhotos.push({ 
+            url: photo, 
+            publicId: null,
+            uploadedAt: new Date()
+          });
+        }
+      } catch (uploadError) {
+        console.error('Error uploading proof photo:', uploadError);
+        // Continue with other photos even if one fails
+      }
+    }
+
+    if (uploadedPhotos.length === 0) {
+      return res.status(400).json({ error: 'Failed to upload proof photos. Please try again.' });
+    }
+
+    // Update volunteer assignment status
     assignment.status = 'completed';
 
-    await incident.addTimelineEntry(
-      'Volunteer completed task',
-      req.user._id,
-      notes
-    );
+    // Update incident - mark as pending_verification (NOT resolved yet)
+    incident.status = 'pending_verification';
+    incident.resolutionNotes = notes;
+    incident.outcome = outcome || 'rescued';
+    
+    // Set verification data
+    incident.verification = {
+      status: 'pending',
+      submittedBy: req.user._id,
+      submittedAt: new Date(),
+      proofPhotos: uploadedPhotos
+    };
 
-    // Award karma points
-    const user = await User.findById(req.user._id);
-    const karmaPoints = incident.aiAnalysis.priority === 'high' ? 15 :
-      incident.aiAnalysis.priority === 'medium' ? 10 : 5;
-
-    await user.addKarmaPoints(karmaPoints);
-    user.volunteerData.tasksCompleted += 1;
-    await user.save();
+    // Add timeline entry
+    incident.timeline.push({
+      action: 'Resolution submitted for verification',
+      performedBy: req.user._id,
+      notes: notes || 'Volunteer submitted resolution with proof photos',
+      timestamp: new Date()
+    });
 
     await incident.save();
 
-    // Emit Socket.io event
+    // Emit Socket.io event for admin
     const io = req.app.get('io');
     if (io) {
-      io.to('admin_room').emit('task_completed', {
+      io.to('admin_room').emit('new_verification_request', {
         incidentId: incident._id,
-        volunteerId: req.user._id
+        volunteerId: req.user._id,
+        volunteerName: req.user.name,
+        submittedAt: new Date()
       });
     }
 
     res.json({
       success: true,
-      message: `Task completed! You earned ${karmaPoints} karma points.`,
-      karmaEarned: karmaPoints,
-      totalKarma: user.volunteerData.karmaPoints,
-      badges: user.volunteerData.badges
+      message: 'Resolution submitted! Awaiting admin verification for karma points.',
+      status: 'pending_verification',
+      incident: {
+        id: incident._id,
+        status: incident.status,
+        verification: incident.verification.status
+      }
     });
   } catch (error) {
-    console.error('Complete task error:', error);
-    res.status(500).json({ error: 'Failed to complete task' });
+    console.error('Submit resolution error:', error);
+    res.status(500).json({ error: 'Failed to submit resolution' });
   }
 };
+
+// Legacy completeTask - redirects to submitResolution for backward compatibility
+export const completeTask = async (req, res) => {
+  // If proofPhotos not provided, return error explaining new flow
+  if (!req.body.proofPhotos || req.body.proofPhotos.length === 0) {
+    return res.status(400).json({ 
+      error: 'Proof photo is now required. Please capture a photo of the resolved situation.',
+      requiresProofPhoto: true
+    });
+  }
+  
+  // Forward to submitResolution
+  return submitResolution(req, res);
+};
+
 
 // Get leaderboard
 export const getLeaderboard = async (req, res) => {

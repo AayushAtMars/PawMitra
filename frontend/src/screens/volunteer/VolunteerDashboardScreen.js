@@ -13,8 +13,10 @@ import {
   TextInput,
   Linking,
   Platform,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { volunteersAPI, incidentsAPI, authAPI } from '../../services/api';
 import theme from '../../theme';
@@ -35,6 +37,8 @@ const VolunteerDashboardScreen = ({ navigation }) => {
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [proofPhoto, setProofPhoto] = useState(null);
+  const [submittingResolution, setSubmittingResolution] = useState(false);
   const [taskFilter, setTaskFilter] = useState('my'); // 'my' or 'available'
 
   useEffect(() => {
@@ -158,33 +162,76 @@ const VolunteerDashboardScreen = ({ navigation }) => {
     setShowResolveModal(true);
   };
 
+  // Capture proof photo using camera
+  const captureProofPhoto = async () => {
+    try {
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera permission is needed to capture proof photos');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setProofPhoto({
+          uri: asset.uri,
+          base64: `data:image/jpeg;base64,${asset.base64}`
+        });
+      }
+    } catch (error) {
+      console.error('Error capturing photo:', error);
+      Alert.alert('Error', 'Failed to capture photo');
+    }
+  };
+
   const submitResolution = async () => {
+    if (!proofPhoto) {
+      Alert.alert('Proof Required', 'Please capture a photo of the resolved situation');
+      return;
+    }
+
     if (!resolutionNotes.trim()) {
-      Alert.alert('Error', 'Please enter resolution notes');
+      Alert.alert('Notes Required', 'Please enter resolution notes');
       return;
     }
 
     try {
-      const response = await incidentsAPI.resolveIncident(selectedTask._id, {
-        resolutionNotes: resolutionNotes.trim(),
-        photos: []
+      setSubmittingResolution(true);
+      
+      const response = await volunteersAPI.submitResolution({
+        incidentId: selectedTask._id,
+        notes: resolutionNotes.trim(),
+        outcome: 'rescued',
+        proofPhotos: [proofPhoto.base64]
       });
       
       setShowResolveModal(false);
       setResolutionNotes('');
+      setProofPhoto(null);
       setSelectedTask(null);
       
-      // Reload dashboard data immediately
+      // Reload dashboard data
       loadDashboardData();
       
-      // Show success message
+      // Show success message - karma awaits verification
       Alert.alert(
-        'Success! 🎉',
-        `Incident resolved!\n+${response.data.karmaEarned} karma points earned!`
+        'Submitted! 📋',
+        'Your resolution has been submitted.\nKarma points will be awarded after admin verification.',
+        [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('Error resolving incident:', error);
-      Alert.alert('Error', 'Failed to resolve incident');
+      console.error('Error submitting resolution:', error);
+      const errorMsg = error.response?.data?.error || 'Failed to submit resolution';
+      Alert.alert('Error', errorMsg);
+    } finally {
+      setSubmittingResolution(false);
     }
   };
 
@@ -504,12 +551,47 @@ const VolunteerDashboardScreen = ({ navigation }) => {
         visible={showResolveModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowResolveModal(false)}
+        onRequestClose={() => {
+          setShowResolveModal(false);
+          setProofPhoto(null);
+          setResolutionNotes('');
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Mark as Resolved</Text>
+            <Text style={styles.modalTitle}>Submit Resolution</Text>
+            <Text style={styles.modalSubtitle}>
+              Capture a proof photo and add notes for admin verification
+            </Text>
             
+            {/* Proof Photo Section */}
+            <Text style={styles.modalLabel}>Proof Photo *</Text>
+            
+            {proofPhoto ? (
+              <View style={styles.proofPhotoContainer}>
+                <Image source={{ uri: proofPhoto.uri }} style={styles.proofPhotoPreview} />
+                <TouchableOpacity
+                  style={styles.retakeButton}
+                  onPress={captureProofPhoto}
+                >
+                  <Ionicons name="camera-reverse" size={20} color="#fff" />
+                  <Text style={styles.retakeButtonText}>Retake</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.capturePhotoButton}
+                onPress={captureProofPhoto}
+              >
+                <Ionicons name="camera" size={32} color={theme.colors.primary} />
+                <Text style={styles.capturePhotoText}>Capture Proof Photo</Text>
+                <Text style={styles.capturePhotoHint}>
+                  Take a photo showing the resolved situation
+                </Text>
+              </TouchableOpacity>
+            )}
+            
+            {/* Resolution Notes */}
             <Text style={styles.modalLabel}>Resolution Notes *</Text>
             <TextInput
               style={styles.resolutionInput}
@@ -517,22 +599,39 @@ const VolunteerDashboardScreen = ({ navigation }) => {
               value={resolutionNotes}
               onChangeText={setResolutionNotes}
               multiline
-              numberOfLines={4}
+              numberOfLines={3}
               textAlignVertical="top"
             />
+            
+            {/* Info Message */}
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={18} color="#3B82F6" />
+              <Text style={styles.infoText}>
+                Karma points will be awarded after admin verifies your resolution
+              </Text>
+            </View>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowResolveModal(false)}
+                onPress={() => {
+                  setShowResolveModal(false);
+                  setProofPhoto(null);
+                  setResolutionNotes('');
+                }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.submitButton]}
+                style={[styles.modalButton, styles.submitButton, (!proofPhoto || submittingResolution) && styles.disabledButton]}
                 onPress={submitResolution}
+                disabled={!proofPhoto || submittingResolution}
               >
-                <Text style={styles.submitButtonText}>Submit</Text>
+                {submittingResolution ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Submit for Verification</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -895,6 +994,77 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.textPrimary,
     textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
+  },
+  proofPhotoContainer: {
+    position: 'relative',
+    marginBottom: theme.spacing.lg,
+  },
+  proofPhotoPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.gray200,
+  },
+  retakeButton: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  retakeButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  capturePhotoButton: {
+    backgroundColor: theme.colors.primary + '10',
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    borderStyle: 'dashed',
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: 24,
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  capturePhotoText: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.primary,
+    marginTop: theme.spacing.sm,
+  },
+  capturePhotoHint: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.lg,
+    gap: 8,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: theme.typography.fontSize.xs,
+    color: '#3B82F6',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 

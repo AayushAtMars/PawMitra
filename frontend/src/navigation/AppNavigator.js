@@ -350,6 +350,7 @@ import VolunteerDashboardScreen from "../screens/volunteer/VolunteerDashboardScr
 /* ================= ADOPTION & MARKETPLACE ================= */
 import AddPetScreen from "../screens/adoption/AddPetScreen";
 import MyPetsScreen from "../screens/adoption/MyPetsScreen";
+import AdoptionRequestsScreen from "../screens/adoption/AdoptionRequestsScreen";
 import MyServicesScreen from "../screens/marketplace/MyServicesScreen";
 import RegisterServiceScreen from "../screens/marketplace/RegisterServiceScreen";
 
@@ -462,6 +463,7 @@ const AppNavigator = () => {
               options={{ headerShown: true, title: "Add Pet", presentation: "modal" }}
             />
             <Stack.Screen name="MyPets" component={MyPetsScreen} />
+            <Stack.Screen name="AdoptionRequests" component={AdoptionRequestsScreen} />
 
             {/* MARKETPLACE */}
             <Stack.Screen

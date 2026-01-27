@@ -369,6 +369,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.white,
     borderTopLeftRadius: theme.borderRadius.xxl,
     borderTopRightRadius: theme.borderRadius.xxl,
+    minHeight: 450,
     maxHeight: "85%",
     ...theme.shadows.xl,
   },

@@ -700,9 +700,14 @@ const MyPetsScreen = ({ navigation }) => {
           <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>My Pets</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('AddPet')}>
-          <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('AdoptionRequests')}>
+            <Ionicons name="mail" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('AddPet')}>
+            <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Stats Bar */}

@@ -69,4 +69,25 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
 };
 
+export const adminAPI = {
+  // Dashboard
+  getStats: () => api.get('/admin/stats'),
+  
+  // Verifications
+  getPendingVerifications: () => api.get('/admin/verifications/pending'),
+  approveVerification: (incidentId, bonusKarma = 0) => 
+    api.post('/admin/verifications/approve', { incidentId, bonusKarma }),
+  rejectVerification: (incidentId, reason) => 
+    api.post('/admin/verifications/reject', { incidentId, reason }),
+  
+  // Volunteers
+  getAllVolunteers: (params) => api.get('/admin/volunteers', { params }),
+  addBonusKarma: (volunteerId, karma, reason) => 
+    api.post('/admin/volunteers/bonus-karma', { volunteerId, karma, reason }),
+  
+  // Incidents
+  getAllIncidents: (params) => api.get('/admin/incidents', { params }),
+};
+
 export default api;
+
