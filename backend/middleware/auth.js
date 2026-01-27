@@ -127,6 +127,10 @@ export const authorize = (...roles) => {
   };
 };
 
+// --- Alias 'authorize' as 'authorizeRoles' ---
+// This allows other files to import { authorizeRoles } without errors
+export const authorizeRoles = authorize;
+
 // Middleware to check if user is a volunteer
 export const isVolunteer = (req, res, next) => {
   if (!req.user) {
